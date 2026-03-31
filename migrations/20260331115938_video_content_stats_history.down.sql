@@ -1,0 +1,1 @@
+DROP TABLE IF EXISTS video_content_stats_history CASCADE;
