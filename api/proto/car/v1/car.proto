@@ -1,0 +1,57 @@
+syntax = "proto3";
+
+package car.v1;
+
+option go_package = "github.com/gkarman/demo/api/gen/go/car/v1;car";
+
+service Car {
+  rpc GetCar(GetCarRequest) returns (GetCarResponse) {}
+  rpc GetCarList(GetCarListRequest) returns (GetCarListResponse) {}
+  rpc CreateCar(CreateCarRequest) returns (CreateCarResponse) {}
+  rpc UpdateCar(UpdateCarRequest) returns (UpdateCarResponse) {}
+  rpc DeleteCar(DeleteCarRequest) returns (DeleteCarResponse) {}
+}
+
+message GetCarRequest {
+  string id = 1;
+}
+
+message GetCarResponse {
+  CarInfo car = 1;
+}
+
+message GetCarListRequest {
+
+}
+
+message GetCarListResponse {
+  repeated CarInfo cars = 1;
+}
+
+message CarInfo {
+  string id = 1;
+  string name = 2;
+}
+
+message CreateCarRequest {
+  string name = 1;
+}
+
+message CreateCarResponse {
+  string id = 1;
+}
+
+message UpdateCarRequest {
+  string id = 1;
+  string name = 2;
+}
+
+message UpdateCarResponse {
+  CarInfo car = 1;
+}
+
+message DeleteCarRequest {
+  string id = 1;
+}
+
+message DeleteCarResponse {}
