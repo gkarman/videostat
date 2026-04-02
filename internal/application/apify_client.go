@@ -3,9 +3,10 @@ package application
 import (
 	"context"
 
-	"github.com/gkarman/demo/internal/domain/video"
+	"github.com/gkarman/demo/internal/domain/blogger"
+
 )
 
 type ApifyClient interface {
-	FetchAccountSnapshot(ctx context.Context, url string) (*video.AccountSnapshot, error)
+	Search(ctx context.Context, url string) (*blogger.Blogger, error)
 }

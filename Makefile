@@ -20,6 +20,9 @@ run_worker_notify:
 run_worker_cron:
 	$(call run_with_env,go run ./cmd/worker_cron)
 
+test-short:
+	$(call run_with_env,go test -v -race -count=1 ./...)
+
 lint:
 	$(call run_with_env,golangci-lint run)
 

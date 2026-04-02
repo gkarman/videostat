@@ -1,6 +1,6 @@
-package video
+package dictionary
 
 type Platform struct {
-	ID   int16
+	ID   int
 	Name string
 }
