@@ -1,6 +1,7 @@
 package platform
 
 import (
+	"context"
 	"fmt"
 	"log/slog"
 
@@ -12,11 +13,12 @@ import (
 	"google.golang.org/grpc"
 )
 
-func NewGRPCServer(log *slog.Logger, db *pgxpool.Pool, cfg *config.Config, d *dispatcher.Dispatcher) (*grpc2.Server, error) {
+func NewGRPCServer(ctx context.Context, log *slog.Logger, db *pgxpool.Pool, cfg *config.Config, d *dispatcher.Dispatcher) (*grpc2.Server, error) {
 	grpcConf := grpc2.Config{
 		Addr: cfg.ServerGRPC.Addr,
 	}
 	grpcServer, err := grpc2.NewServer(
+		ctx,
 		log,
 		grpcConf,
 		grpc.ChainUnaryInterceptor(

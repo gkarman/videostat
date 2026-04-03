@@ -20,5 +20,4 @@ func NewPostgres(parent context.Context, cfg *config.Config) (*pgxpool.Pool, err
 		MaxConnLifetime: time.Duration(cfg.DB.MaxConnectionLifeTimeMinutes) * time.Minute,
 		MaxConnIdleTime: time.Duration(cfg.DB.MaxConnectionIdleTimeMinutes) * time.Minute,
 	})
-	
 }

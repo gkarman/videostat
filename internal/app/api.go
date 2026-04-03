@@ -52,9 +52,12 @@ func NewApi(ctx context.Context) (*Api, error) {
 	events.RegisterEventHandlers(d, log, rabbitPublisher)
 
 	serverHttp := platform.NewHTTPServer(log, postgresDB, cfg, d)
-	serverGrpc, err := platform.NewGRPCServer(log, postgresDB, cfg, d)
+	serverGrpc, err := platform.NewGRPCServer(ctx, log, postgresDB, cfg, d)
 	if err != nil {
-		rabbitPublisher.Close()
+		err := rabbitPublisher.Close()
+		if err != nil {
+			return nil, fmt.Errorf("close rabbitPublisher: %w", err)
+		}
 		return nil, fmt.Errorf("create gRPC server: %w", err)
 	}
 
@@ -68,8 +71,12 @@ func NewApi(ctx context.Context) (*Api, error) {
 }
 
 func (a *Api) Run(ctx context.Context) error {
-	defer a.db.Close()
-	defer a.rabbitPusher.Close()
+	defer func() {
+		a.db.Close()
+		if err := a.rabbitPusher.Close(); err != nil {
+			a.log.Error("rabbit close", "err", err)
+		}
+	}()
 	a.serverHttp.Start()
 	a.grpcServer.Start()
 
@@ -84,7 +91,6 @@ func (a *Api) Run(ctx context.Context) error {
 }
 
 func (a *Api) shutdownServers(ctx context.Context) error {
-
 	var (
 		wg        sync.WaitGroup
 		errCh     = make(chan error, 2)

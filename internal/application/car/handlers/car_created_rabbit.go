@@ -12,7 +12,6 @@ import (
 )
 
 func CarCreatedToRabbitHandler(publisher application.Publisher, log *slog.Logger) func(ctx context.Context, e any) {
-
 	return func(ctx context.Context, e any) {
 		event, ok := e.(*car.Created)
 		if !ok {

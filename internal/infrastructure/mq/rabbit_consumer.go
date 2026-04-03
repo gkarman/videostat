@@ -67,7 +67,11 @@ func (c *RabbitConsumer) consumeOnce(ctx context.Context, handler func([]byte) e
 	if err != nil {
 		return fmt.Errorf("dial: %w", err)
 	}
-	defer conn.Close()
+	defer func() {
+		if err := conn.Close(); err != nil {
+			c.log.Error("rabbit connection close", "err", err)
+		}
+	}()
 
 	c.log.Info("rabbit connected")
 	c.resetBackoff()
@@ -76,7 +80,12 @@ func (c *RabbitConsumer) consumeOnce(ctx context.Context, handler func([]byte) e
 	if err != nil {
 		return fmt.Errorf("channel: %w", err)
 	}
-	defer ch.Close()
+	defer func() {
+		if err := ch.Close(); err != nil {
+			c.log.Error("rabbit channel close", "err", err)
+		}
+	}()
+
 
 	if err := ch.Qos(1, 0, false); err != nil {
 		return fmt.Errorf("qos: %w", err)
@@ -145,7 +154,7 @@ func (c *RabbitConsumer) consumeOnce(ctx context.Context, handler func([]byte) e
 			_ = msg.Ack(false)
 
 		case err := <-closeCh:
-			return fmt.Errorf("channel closed: %v", err)
+			return fmt.Errorf("channel closed: %w", err)
 
 		case <-ctx.Done():
 			c.log.Info("consumeOnce stopped by context")

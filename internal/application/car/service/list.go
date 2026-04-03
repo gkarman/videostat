@@ -23,7 +23,7 @@ func NewList(repo car.Repo) *List {
 func (s *List) Execute(ctx context.Context, _ requestdto.GetList) (*responsedto.GetList, error) {
 	cars, err := s.repo.List(ctx)
 	if err != nil {
-		return nil, fmt.Errorf(`List.handel: %w`, err)
+		return nil, fmt.Errorf("list.handel: %w", err)
 	}
 	resp := &responsedto.GetList{
 		Cars: mapper.CarsFromDomain(cars),

@@ -23,8 +23,9 @@ func (s *Server) Registrar() grpc.ServiceRegistrar {
 	return s.grpcServer
 }
 
-func NewServer(log *slog.Logger, cfg Config, opts ...grpc.ServerOption) (*Server, error) {
-	lis, err := net.Listen("tcp", cfg.Addr)
+func NewServer(ctx context.Context, log *slog.Logger, cfg Config, opts ...grpc.ServerOption) (*Server, error) {
+	lc := net.ListenConfig{}
+	lis, err := lc.Listen(ctx, "tcp", cfg.Addr)
 	if err != nil {
 		return nil, fmt.Errorf("listen: %w", err)
 	}

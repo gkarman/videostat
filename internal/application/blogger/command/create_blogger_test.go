@@ -14,7 +14,6 @@ import (
 )
 
 func TestCreateBlogger(t *testing.T) {
-
 	repoDictionaryFake := repo_dictionary.NewFake()
 
 	tests := []struct {

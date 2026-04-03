@@ -30,7 +30,7 @@ func NewRabbitPublisher(cfg Config) (*RabbitPublisher, error) {
 	return p, nil
 }
 
-func (p *RabbitPublisher) connect() error {
+func (p *RabbitPublisher) connect() (err error) {
 	dsn := fmt.Sprintf(
 		"amqp://%s:%s@%s:%s/",
 		p.cfg.User,
@@ -44,11 +44,23 @@ func (p *RabbitPublisher) connect() error {
 		return err
 	}
 
+
+	defer func() {
+		if err != nil {
+			_ = conn.Close()
+		}
+	}()
+
 	ch, err := conn.Channel()
 	if err != nil {
-		conn.Close()
 		return err
 	}
+
+	defer func() {
+		if err != nil {
+			_ = ch.Close()
+		}
+	}()
 
 	err = ch.ExchangeDeclare(
 		p.cfg.Exchange,
@@ -60,10 +72,10 @@ func (p *RabbitPublisher) connect() error {
 		nil,
 	)
 	if err != nil {
-		conn.Close()
 		return err
 	}
 
+	// С этого момента ресурсы "переданы" в publisher
 	p.mu.Lock()
 	p.conn = conn
 	p.ch = ch

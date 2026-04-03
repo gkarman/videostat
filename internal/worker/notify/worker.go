@@ -40,7 +40,6 @@ func (w *Worker) Run(ctx context.Context) error {
 }
 
 func (w *Worker) handleMessage(body []byte) error {
-
 	var base struct {
 		EventType string `json:"event_type"`
 	}
