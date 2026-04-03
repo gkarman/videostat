@@ -3,6 +3,7 @@ package response
 import (
 	"encoding/json"
 	"net/http"
+	"log/slog"
 )
 
 type ErrorBody struct {
@@ -12,7 +13,10 @@ type ErrorBody struct {
 func JSON(w http.ResponseWriter, code int, v any) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(code)
-	json.NewEncoder(w).Encode(v)
+	err := json.NewEncoder(w).Encode(v)
+	if err != nil {
+		slog.Error(err.Error())
+	}
 }
 
 func ErrorJSON(w http.ResponseWriter, code int, msg string) {
