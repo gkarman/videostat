@@ -14,6 +14,7 @@ import (
 	"github.com/gkarman/demo/internal/infrastructure/mq"
 	grpc2 "github.com/gkarman/demo/internal/infrastructure/transport/grpc"
 	"github.com/gkarman/demo/internal/infrastructure/transport/http"
+	"github.com/gkarman/demo/internal/infrastructure/transport/telegram"
 	"github.com/gkarman/demo/internal/platform"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
@@ -24,6 +25,7 @@ type Api struct {
 	serverHttp   *http.Server
 	grpcServer   *grpc2.Server
 	rabbitPusher *mq.RabbitPublisher
+	telegramBot     *telegram.Bot
 }
 
 func NewApi(ctx context.Context) (*Api, error) {
@@ -60,6 +62,14 @@ func NewApi(ctx context.Context) (*Api, error) {
 		}
 		return nil, fmt.Errorf("create gRPC server: %w", err)
 	}
+	telegramBot, err := platform.NewTelegramBot(log, cfg)
+	if err != nil {
+		err := rabbitPublisher.Close()
+		if err != nil {
+			return nil, fmt.Errorf("close rabbitPublisher: %w", err)
+		}
+		return nil, fmt.Errorf("init telegram bot: %w", err)
+	}
 
 	return &Api{
 		log:          log,
@@ -67,6 +77,7 @@ func NewApi(ctx context.Context) (*Api, error) {
 		serverHttp:   serverHttp,
 		grpcServer:   serverGrpc,
 		rabbitPusher: rabbitPublisher,
+		telegramBot:  telegramBot,
 	}, nil
 }
 
@@ -79,6 +90,7 @@ func (a *Api) Run(ctx context.Context) error {
 	}()
 	a.serverHttp.Start()
 	a.grpcServer.Start()
+	a.telegramBot.Start(ctx)
 
 	<-ctx.Done()
 
@@ -97,7 +109,7 @@ func (a *Api) shutdownServers(ctx context.Context) error {
 		joinedErr error
 	)
 
-	wg.Add(2)
+	wg.Add(3)
 	go func() {
 		defer wg.Done()
 		if err := a.serverHttp.Stop(ctx); err != nil {
@@ -111,6 +123,11 @@ func (a *Api) shutdownServers(ctx context.Context) error {
 			a.log.Error("gRPC server shutdown failed", "error", err)
 			errCh <- fmt.Errorf("gRPC shutdown: %w", err)
 		}
+	}()
+
+	go func() {
+		defer wg.Done()
+		a.telegramBot.Stop()
 	}()
 
 	wg.Wait()

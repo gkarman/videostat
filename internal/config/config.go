@@ -3,13 +3,14 @@ package config
 import "fmt"
 
 type Config struct {
-	Env        string `env:"ENV" env-default:"local"`
-	DB         DBConfig
-	Logger     LoggerConfig
-	ServerHttp ServerHttpConfig
-	ServerGRPC ServerGRPCConfig
-	RabbitMQ   RabbitMQConfig
-	Mail       MailConfig
+	Env         string `env:"ENV" env-default:"local"`
+	DB          DBConfig
+	Logger      LoggerConfig
+	ServerHttp  ServerHttpConfig
+	ServerGRPC  ServerGRPCConfig
+	RabbitMQ    RabbitMQConfig
+	Mail        MailConfig
+	TelegramBot TelegramBotConfig
 }
 
 type DBConfig struct {
@@ -45,19 +46,26 @@ type ServerGRPCConfig struct {
 }
 
 type RabbitMQConfig struct {
-	User string `env:"RABBITMQ_USER" env-default:"guest"`
-	Password string `env:"RABBITMQ_PASS" env-default:"guest"`
-	Host string `env:"RABBITMQ_HOST" env-default:"localhost"`
-	Port string `env:"RABBITMQ_PORT" env-default:"5672"`
-	Exchange string `env:"RABBITMQ_EXCHANGE" env-default:"5672"`
-	PoolSize int `env:"RABBITMQ_POOL_SIZE" env-default:"10"`
-	ReconnectDelay int `env:"RABBITMQ_RECONNECT_DELAY_IN_SECONDS" env-default:"3"`
+	User           string `env:"RABBITMQ_USER" env-default:"guest"`
+	Password       string `env:"RABBITMQ_PASS" env-default:"guest"`
+	Host           string `env:"RABBITMQ_HOST" env-default:"localhost"`
+	Port           string `env:"RABBITMQ_PORT" env-default:"5672"`
+	Exchange       string `env:"RABBITMQ_EXCHANGE" env-default:"5672"`
+	PoolSize       int    `env:"RABBITMQ_POOL_SIZE" env-default:"10"`
+	ReconnectDelay int    `env:"RABBITMQ_RECONNECT_DELAY_IN_SECONDS" env-default:"3"`
 }
 
 type MailConfig struct {
-	Driver string `env:"MAIL_DRIVER" env-default:"smtp"`
-	Host string `env:"MAIL_HOST" env-default:"localhost"`
-	Port string `env:"MAIL_PORT" env-default:"2525"`
-	User string `env:"MAIL_USER" env-default:"user"`
+	Driver   string `env:"MAIL_DRIVER" env-default:"smtp"`
+	Host     string `env:"MAIL_HOST" env-default:"localhost"`
+	Port     string `env:"MAIL_PORT" env-default:"2525"`
+	User     string `env:"MAIL_USER" env-default:"user"`
 	Password string `env:"MAIL_PASSWORD" env-default:"password"`
 }
+
+type TelegramBotConfig struct {
+	Token string `env:"TELEGRAM_BOT_TOKEN" env-default:""`
+	Debug bool `env:"TELEGRAM_BOT_DEBUG" env-default:"false""`
+	Timeout int `env:"TELEGRAM_BOT_TIMEOUT" env-default:"60""`
+}
+
