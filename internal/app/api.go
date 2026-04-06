@@ -25,7 +25,7 @@ type Api struct {
 	serverHttp   *http.Server
 	grpcServer   *grpc2.Server
 	rabbitPusher *mq.RabbitPublisher
-	telegramBot     *telegram.Bot
+	telegramBot  *telegram.Bot
 }
 
 func NewApi(ctx context.Context) (*Api, error) {
@@ -62,7 +62,7 @@ func NewApi(ctx context.Context) (*Api, error) {
 		}
 		return nil, fmt.Errorf("create gRPC server: %w", err)
 	}
-	telegramBot, err := platform.NewTelegramBot(log, cfg)
+	telegramBot, err := platform.NewTelegramBot(log, cfg, postgresDB, d)
 	if err != nil {
 		err := rabbitPublisher.Close()
 		if err != nil {

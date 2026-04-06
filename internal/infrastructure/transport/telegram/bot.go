@@ -4,6 +4,11 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
+	"strings"
+	"sync"
+
+	"github.com/gkarman/demo/internal/application/blogger/command"
+	"github.com/gkarman/demo/internal/application/blogger/reqdto"
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 )
@@ -14,20 +19,36 @@ type Config struct {
 	Timeout int
 }
 
+type userState struct {
+	PlatformName string
+	WaitingURL   bool
+}
+
 type Bot struct {
 	botAPI       *tgbotapi.BotAPI
 	updateConfig tgbotapi.UpdateConfig
 	log          *slog.Logger
 	stop         chan struct{}
 	done         chan struct{}
+
+	createBlogger *command.CreateBlogger
+
+	mu     sync.Mutex
+	states map[int64]*userState
 }
 
 var defaultCommands = []tgbotapi.BotCommand{
 	{Command: "start", Description: "Запуск бота"},
 	{Command: "help", Description: "Список команд"},
+	{Command: "create_blogger", Description: "Создать блогера"},
 }
 
-func NewBot(cfg *Config, log *slog.Logger) (*Bot, error) {
+func NewBot(
+	cfg *Config,
+	log *slog.Logger,
+	createBlogger *command.CreateBlogger,
+) (*Bot, error) {
+
 	botAPI, err := tgbotapi.NewBotAPI(cfg.Token)
 	if err != nil {
 		return nil, fmt.Errorf("new telegram bot: %w", err)
@@ -39,58 +60,50 @@ func NewBot(cfg *Config, log *slog.Logger) (*Bot, error) {
 	updateConfig.Timeout = cfg.Timeout
 
 	return &Bot{
-		botAPI:       botAPI,
-		updateConfig: updateConfig,
-		log:          log,
-		stop:         make(chan struct{}),
-		done:         make(chan struct{}),
+		botAPI:        botAPI,
+		updateConfig:  updateConfig,
+		log:           log,
+		stop:          make(chan struct{}),
+		done:          make(chan struct{}),
+		createBlogger: createBlogger,
+		states:        make(map[int64]*userState),
 	}, nil
 }
 
 func (b *Bot) Start(ctx context.Context) {
 	b.log.Info("start telegram bot")
+
 	go func() {
 		defer close(b.done)
-		if err := b.setCommands(); err != nil {
-			b.log.Error("set commands", "err", err)
-		}
+
+		_ = b.setCommands()
+
 		updates := b.botAPI.GetUpdatesChan(b.updateConfig)
 
 		for {
 			select {
 			case <-ctx.Done():
-				b.log.Info("telegram ctx done")
 				b.botAPI.StopReceivingUpdates()
 				return
 
 			case <-b.stop:
-				b.log.Info("telegram stop signal")
 				b.botAPI.StopReceivingUpdates()
 				return
 
 			case update := <-updates:
-				if update.Message == nil {
-					continue
+				switch {
+				case update.Message != nil:
+					b.handleMessage(update.Message)
+
+				case update.CallbackQuery != nil:
+					b.handleCallback(update.CallbackQuery)
 				}
-				b.handle(update)
 			}
 		}
 	}()
 }
 
-func (b *Bot) handle(update tgbotapi.Update) {
-	msg := update.Message
-
-	if msg.IsCommand() {
-		b.handleCommand(msg)
-		return
-	}
-
-	b.reply(msg.Chat.ID, "Я понимаю только команды. Нажми /help")
-}
-
 func (b *Bot) Stop() {
-	b.log.Info("stop telegram bot")
 	close(b.stop)
 	<-b.done
 }
@@ -101,53 +114,96 @@ func (b *Bot) setCommands() error {
 	return err
 }
 
+// -------------------- Message --------------------
+
+func (b *Bot) handleMessage(msg *tgbotapi.Message) {
+	// FSM: ждём URL
+	if st, ok := b.getState(msg.Chat.ID); ok && st.WaitingURL {
+		b.createBloggerFlow(msg, st)
+		return
+	}
+
+	if msg.IsCommand() {
+		b.handleCommand(msg)
+		return
+	}
+
+	b.reply(msg.Chat.ID, "Я понимаю только команды. Нажми /help")
+}
+
 func (b *Bot) handleCommand(msg *tgbotapi.Message) {
 	switch msg.Command() {
 
 	case "start":
-		//msg := tgbotapi.NewMessage(msg.Chat.ID, "Привет! Выбери команду из меню ниже:")
-		//msg.ReplyMarkup = b.startKeyboard()
-		//msg.ParseMode = tgbotapi.ModeHTML
-		//if _, err := b.botAPI.Send(msg); err != nil {
-		//	b.log.Error("send message", "err", err)
-		//}
-		msg := tgbotapi.NewMessage(msg.Chat.ID, "Привет! Выбери команду:")
-		msg.ReplyMarkup = b.startInlineKeyboard()
-		b.botAPI.Send(msg)
+		m := tgbotapi.NewMessage(msg.Chat.ID, "Привет! Выбери действие:")
+		m.ReplyMarkup = b.startInlineKeyboard()
+		_, _ = b.botAPI.Send(m)
 
 	case "help":
 		b.reply(msg.Chat.ID, b.commandsText())
 
+	case "create_blogger":
+		b.askPlatform(msg.Chat.ID)
 
 	default:
 		b.reply(msg.Chat.ID, "Неизвестная команда")
 	}
 }
 
-func (b *Bot) commandsText() string {
-	return `<b>Доступные команды</b>
+// -------------------- Callback --------------------
 
-🚀 <code>/start</code> — запуск бота
-📖 <code>/help</code> — список команд
+func (b *Bot) handleCallback(q *tgbotapi.CallbackQuery) {
+	defer b.botAPI.Request(tgbotapi.NewCallback(q.ID, ""))
 
-Выбери команду из меню или введи её вручную.`
-}
+	switch {
+	case q.Data == "create_blogger":
+		b.askPlatform(q.Message.Chat.ID)
 
-func (b *Bot) reply(chatID int64, text string) {
-	msg := tgbotapi.NewMessage(chatID, text)
-	msg.ParseMode = tgbotapi.ModeHTML
+	case strings.HasPrefix(q.Data, "platform_"):
+		platform := strings.TrimPrefix(q.Data, "platform_")
 
-	if _, err := b.botAPI.Send(msg); err != nil {
-		b.log.Error("send message", "err", err)
+		b.setState(q.Message.Chat.ID, &userState{
+			PlatformName: platform,
+			WaitingURL:   true,
+		})
+
+		b.reply(q.Message.Chat.ID, "Пришли ссылку на блогера")
 	}
 }
 
+// -------------------- FSM Flow --------------------
 
-func (b *Bot) startKeyboard() tgbotapi.ReplyKeyboardMarkup {
-	return tgbotapi.NewReplyKeyboard(
-		tgbotapi.NewKeyboardButtonRow(
-			tgbotapi.NewKeyboardButton("/start"),
-			tgbotapi.NewKeyboardButton("/help"),
+func (b *Bot) createBloggerFlow(msg *tgbotapi.Message, st *userState) {
+	ctx := context.Background()
+
+	resp, err := b.createBlogger.Run(ctx, reqdto.CreateBlogger{
+		URL:          msg.Text,
+		PlatformName: st.PlatformName,
+	})
+
+	if err != nil {
+		b.reply(msg.Chat.ID, fmt.Sprintf("Ошибка: %v", err))
+		return
+	}
+
+	b.clearState(msg.Chat.ID)
+
+	b.reply(msg.Chat.ID, fmt.Sprintf("Блогер создан ✅\nID: <code>%s</code>", resp.ID))
+}
+
+// -------------------- UI --------------------
+
+func (b *Bot) askPlatform(chatID int64) {
+	m := tgbotapi.NewMessage(chatID, "Выбери платформу:")
+	m.ReplyMarkup = b.platformKeyboard()
+	_, _ = b.botAPI.Send(m)
+}
+
+func (b *Bot) platformKeyboard() tgbotapi.InlineKeyboardMarkup {
+	return tgbotapi.NewInlineKeyboardMarkup(
+		tgbotapi.NewInlineKeyboardRow(
+			tgbotapi.NewInlineKeyboardButtonData("youtube", "platform_youtube"),
+			tgbotapi.NewInlineKeyboardButtonData("tiktok", "platform_tiktok"),
 		),
 	)
 }
@@ -155,8 +211,42 @@ func (b *Bot) startKeyboard() tgbotapi.ReplyKeyboardMarkup {
 func (b *Bot) startInlineKeyboard() tgbotapi.InlineKeyboardMarkup {
 	return tgbotapi.NewInlineKeyboardMarkup(
 		tgbotapi.NewInlineKeyboardRow(
-			tgbotapi.NewInlineKeyboardButtonData("Start", "cmd_start"),
-			tgbotapi.NewInlineKeyboardButtonData("Help", "cmd_help"),
+			tgbotapi.NewInlineKeyboardButtonData("Создать блогера", "create_blogger"),
 		),
 	)
+}
+
+func (b *Bot) commandsText() string {
+	return `<b>Доступные команды</b>
+
+🚀 <code>/start</code>
+📖 <code>/help</code>
+➕ <code>/create_blogger</code>`
+}
+
+func (b *Bot) reply(chatID int64, text string) {
+	msg := tgbotapi.NewMessage(chatID, text)
+	msg.ParseMode = tgbotapi.ModeHTML
+	_, _ = b.botAPI.Send(msg)
+}
+
+// -------------------- State helpers --------------------
+
+func (b *Bot) setState(chatID int64, st *userState) {
+	b.mu.Lock()
+	defer b.mu.Unlock()
+	b.states[chatID] = st
+}
+
+func (b *Bot) getState(chatID int64) (*userState, bool) {
+	b.mu.Lock()
+	defer b.mu.Unlock()
+	st, ok := b.states[chatID]
+	return st, ok
+}
+
+func (b *Bot) clearState(chatID int64) {
+	b.mu.Lock()
+	defer b.mu.Unlock()
+	delete(b.states, chatID)
 }

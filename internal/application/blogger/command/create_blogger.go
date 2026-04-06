@@ -45,9 +45,23 @@ func (c *CreateBlogger) Run(ctx context.Context, req reqdto.CreateBlogger) (resp
 		PlatformID: platform.ID,
 		URL:        req.URL,
 	}
+
+	existBloggerUrl, err := c.repoBlogger.ExistByUrl(ctx, r.URL)
+	if err != nil {
+		return respdto.CreateBlogger{}, fmt.Errorf("check exist in db: %w", err)
+	}
+
+	if existBloggerUrl {
+		return respdto.CreateBlogger{}, blogger.ErrUrlExist
+	}
+
 	b, err := blogger.Create(r)
 	if err != nil {
 		return respdto.CreateBlogger{}, fmt.Errorf("create blogger: %w", err)
+	}
+
+	if err := c.repoBlogger.Save(ctx, b); err != nil {
+		return respdto.CreateBlogger{}, fmt.Errorf("save blogger in db: %w", err)
 	}
 
 	events := b.PullEvents()
