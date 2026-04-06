@@ -77,7 +77,6 @@ func TestCreateBlogger(t *testing.T) {
 				require.NotZero(t, resp)
 			}
 
-			// проверка событий
 			if len(tt.expectedEvent) > 0 {
 				require.Len(t, disp.Events, 1)
 				actualEvents := disp.Events[0]
