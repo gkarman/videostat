@@ -6,4 +6,5 @@ CREATE TABLE platforms
 
 INSERT INTO platforms (name)
 VALUES ('youtube'),
-       ('tiktok');
+       ('tiktok'),
+       ('instagram');
