@@ -60,7 +60,7 @@ func TestCreateBlogger(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			repoBlogger := repo_blogger.NewFake()
+			repoBlogger := repo_blogger.NewInMemory()
 			disp := dispatcher.NewFakeDispatcher()
 			cmd := NewCreateBlogger(repoBlogger, repoDictionaryFake, disp)
 

@@ -12,7 +12,7 @@ type InMemoryRepo struct {
 	data map[string]*blogger.Blogger // key = url
 }
 
-func NewFake() *InMemoryRepo {
+func NewInMemory() *InMemoryRepo {
 	return &InMemoryRepo{
 		data: make(map[string]*blogger.Blogger),
 	}

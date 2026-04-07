@@ -4,7 +4,6 @@ type Blogger struct {
 	ID         string
 	PlatformID int
 	URL        string
-	Video      []*Video
 	events     []any
 }
 
