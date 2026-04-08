@@ -78,7 +78,7 @@ func (r *PostgresRepo) SaveVideo(ctx context.Context, v *blogger.Video) error {
 		INSERT INTO videos 
 		(id, blogger_id, external_id, url, title, views, likes, comments, published_at, created_at)
 		VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)
-		ON CONFLICT (external_id) DO NOTHING
+		ON CONFLICT (blogger_id, external_id) DO NOTHING
 	`
 	_, err := r.db.Exec(ctx,
 		q,

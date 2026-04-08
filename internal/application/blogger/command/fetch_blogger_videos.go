@@ -41,6 +41,7 @@ func (c *FetchBloggerVideos) Execute(ctx context.Context, req reqdto.FetchBlogge
 	}
 
 	for _, v := range videos {
+		log.Debug("video for save", "date_video", v)
 		err := c.repo.SaveVideo(ctx, v)
 		if err != nil {
 			log.Error("save video failed", "videoID", v.ExternalID, "err", err)

@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/gkarman/demo/internal/domain/blogger"
+	"github.com/gkarman/demo/internal/infrastructure/logger"
 	"github.com/google/uuid"
 )
 
@@ -23,9 +24,9 @@ type youtubeVideo struct {
 	URL         string    `json:"url"`
 	Title       string    `json:"title"`
 	Views       int64     `json:"viewCount"`
-	Likes       int64     `json:"likeCount"`
+	Likes       int64     `json:"likes"`
 	Comments    int64     `json:"commentsCount"`
-	PublishedAt time.Time `json:"publishedAt"`
+	PublishedAt time.Time `json:"date"`
 }
 
 type tiktokVideo struct {
@@ -62,13 +63,17 @@ func (s *VideoSearcher) Search(ctx context.Context, b *blogger.Blogger) ([]*blog
 	}
 }
 
-
 func (s *VideoSearcher) searchYouTube(ctx context.Context, b *blogger.Blogger) ([]*blogger.Video, error) {
+	log := logger.FromContext(ctx)
+
+	log.Debug("находим данные для блогера", "id", b.ID, "url", b.URL)
 	input := map[string]any{
-		"channels":   []string{b.URL},
-		"maxResults": 200,
+		"channels": []string{b.URL},
+		"maxResultsShorts": 10,
 	}
+
 	raw, err := s.client.RunActorSync(ctx, "streamers~youtube-shorts-scraper", input)
+	log.Debug("Получили ответ", raw)
 	if err != nil {
 		return nil, err
 	}
@@ -77,6 +82,8 @@ func (s *VideoSearcher) searchYouTube(ctx context.Context, b *blogger.Blogger) (
 	if err := json.Unmarshal(raw, &items); err != nil {
 		return nil, err
 	}
+	log.Debug("проверка", "кол-во элементов", len(items))
+	log.Debug("проверка", "элементы", items)
 
 	days := 40
 	return s.youtubeToVideos(b, items, days), nil
@@ -85,7 +92,7 @@ func (s *VideoSearcher) searchYouTube(ctx context.Context, b *blogger.Blogger) (
 func (s *VideoSearcher) searchTikTok(ctx context.Context, b *blogger.Blogger) ([]*blogger.Video, error) {
 	input := map[string]any{
 		"startUrls":  []map[string]string{{"url": b.URL}},
-		"maxResults": 200,
+		"maxResults": 10,
 	}
 	raw, err := s.client.RunActorSync(ctx, "clockworks~tiktok-scraper", input)
 	if err != nil {
@@ -104,7 +111,7 @@ func (s *VideoSearcher) searchTikTok(ctx context.Context, b *blogger.Blogger) ([
 func (s *VideoSearcher) searchInstagram(ctx context.Context, b *blogger.Blogger) ([]*blogger.Video, error) {
 	input := map[string]any{
 		"startUrls":  []map[string]string{{"url": b.URL}},
-		"maxResults": 200,
+		"maxResults": 10,
 	}
 	raw, err := s.client.RunActorSync(ctx, "apify~instagram-scraper", input)
 	if err != nil {
