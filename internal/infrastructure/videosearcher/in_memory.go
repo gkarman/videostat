@@ -1,4 +1,4 @@
-package third_party
+package videosearcher
 
 import (
 	"context"

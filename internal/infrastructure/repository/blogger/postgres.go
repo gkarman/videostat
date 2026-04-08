@@ -2,9 +2,11 @@ package blogger
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	"github.com/gkarman/demo/internal/domain/blogger"
+	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
@@ -49,5 +51,100 @@ func (r *PostgresRepo) ExistByUrl(ctx context.Context, url string) (bool, error)
 
 	return exists, nil
 
+}
+
+func (r *PostgresRepo) GetById(ctx context.Context, id string) (*blogger.Blogger, error) {
+	const q = `
+		SELECT id, platform_id, url
+		FROM bloggers
+		WHERE id = $1
+	`
+
+	row := r.db.QueryRow(ctx, q, id)
+
+	var b blogger.Blogger
+	if err := row.Scan(&b.ID, &b.PlatformID, &b.URL); err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return nil, blogger.ErrBloggerNotFound
+		}
+		return nil, err
+	}
+
+	return &b, nil
+}
+
+func (r *PostgresRepo) SaveVideo(ctx context.Context, v *blogger.Video) error {
+	const q = `
+		INSERT INTO videos 
+		(id, blogger_id, external_id, url, title, views, likes, comments, published_at, created_at)
+		VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)
+		ON CONFLICT (external_id) DO NOTHING
+	`
+	_, err := r.db.Exec(ctx,
+		q,
+		v.ID,
+		v.BloggerID,
+		v.ExternalID,
+		v.URL,
+		v.Title,
+		v.Views,
+		v.Likes,
+		v.Comments,
+		v.PublishedAt,
+		v.CreatedAt,
+	)
+	if err != nil {
+		return fmt.Errorf("save video: %w", err)
+	}
+	return nil
+}
+
+func (r *PostgresRepo) ListVideosByBlogger(ctx context.Context, bloggerID string) ([]*blogger.Video, error) {
+	const q = `
+		SELECT 
+			id,
+			blogger_id,
+			external_id,
+			url,
+			title,
+			views,
+			likes,
+			comments,
+			published_at,
+			created_at
+		FROM videos
+		WHERE blogger_id = $1
+		ORDER BY views DESC
+	`
+
+	rows, err := r.db.Query(ctx, q, bloggerID)
+	if err != nil {
+		return nil, fmt.Errorf("list videos by blogger: %w", err)
+	}
+	defer rows.Close()
+
+	var result []*blogger.Video
+
+	for rows.Next() {
+		var v blogger.Video
+		if err := rows.Scan(
+			&v.ID,
+			&v.BloggerID,
+			&v.ExternalID,
+			&v.URL,
+			&v.Title,
+			&v.Views,
+			&v.Likes,
+			&v.Comments,
+			&v.PublishedAt,
+			&v.CreatedAt,
+		); err != nil {
+			return nil, fmt.Errorf("scan video: %w", err)
+		}
+
+		result = append(result, &v)
+	}
+
+	return result, nil
 }
 
