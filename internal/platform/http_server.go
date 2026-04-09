@@ -7,11 +7,12 @@ import (
 	"github.com/gkarman/demo/internal/config"
 	"github.com/gkarman/demo/internal/infrastructure/dispatcher"
 	"github.com/gkarman/demo/internal/infrastructure/transport/http"
+	"github.com/gkarman/demo/internal/infrastructure/videosearcher/apify"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
-func NewHTTPServer(log *slog.Logger, db *pgxpool.Pool, cfg *config.Config, d *dispatcher.Dispatcher) *http.Server {
-	router := http.NewRouter(log, db, d)
+func NewHTTPServer(log *slog.Logger, db *pgxpool.Pool, cfg *config.Config, d *dispatcher.Dispatcher, apify *apify.Client) *http.Server {
+	router := http.NewRouter(log, db, d, apify)
 	return http.NewServer(
 		log,
 		router,

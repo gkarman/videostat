@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 
-	blogger_app "github.com/gkarman/demo/internal/application/blogger"
+	blogger_app "github.com/gkarman/demo/internal/application"
 	"github.com/gkarman/demo/internal/application/blogger/reqdto"
 	"github.com/gkarman/demo/internal/domain/blogger"
 	"github.com/gkarman/demo/internal/infrastructure/logger"

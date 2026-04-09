@@ -11,6 +11,7 @@ type Config struct {
 	RabbitMQ    RabbitMQConfig
 	Mail        MailConfig
 	TelegramBot TelegramBotConfig
+	Apify       ApifyConfig
 }
 
 type DBConfig struct {
@@ -64,8 +65,12 @@ type MailConfig struct {
 }
 
 type TelegramBotConfig struct {
-	Token string `env:"TELEGRAM_BOT_TOKEN" env-default:""`
-	Debug bool `env:"TELEGRAM_BOT_DEBUG" env-default:"false""`
-	Timeout int `env:"TELEGRAM_BOT_TIMEOUT" env-default:"60""`
+	Token   string `env:"TELEGRAM_BOT_TOKEN" env-default:""`
+	Debug   bool   `env:"TELEGRAM_BOT_DEBUG" env-default:"false"`
+	Timeout int    `env:"TELEGRAM_BOT_TIMEOUT" env-default:"60"`
 }
 
+type ApifyConfig struct {
+	Token string `env:"APIFY_TOKEN" env-default:""`
+	Host  string `env:"APIFY_HOST" env-default:""`
+}

@@ -10,20 +10,21 @@ import (
 )
 
 type Client struct {
-	token string
-	http  *http.Client
+	cfg  Config
+	http *http.Client
 }
 
-func NewClient(token string) *Client {
+func NewClient(cfg Config) *Client {
 	return &Client{
-		token: token,
-		http:  &http.Client{},
+		cfg:  cfg,
+		http: &http.Client{},
 	}
 }
 
 func (c *Client) RunActorSync(ctx context.Context, actor string, input any) ([]byte, error) {
 	url := fmt.Sprintf(
-		"https://api.apify.com/v2/acts/%s/run-sync-get-dataset-items",
+		"%s/acts/%s/run-sync-get-dataset-items",
+		c.cfg.Host,
 		actor,
 	)
 
@@ -38,7 +39,7 @@ func (c *Client) RunActorSync(ctx context.Context, actor string, input any) ([]b
 	}
 
 	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("Authorization", "Bearer "+c.token)
+	req.Header.Set("Authorization", "Bearer "+c.cfg.Token)
 
 	resp, err := c.http.Do(req)
 	if err != nil {

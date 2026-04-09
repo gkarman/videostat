@@ -17,13 +17,13 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
-func NewRouter(log *slog.Logger, db *pgxpool.Pool, d *dispatcher.Dispatcher) *chi.Mux {
+func NewRouter(log *slog.Logger, db *pgxpool.Pool, d *dispatcher.Dispatcher, apify *apify.Client) *chi.Mux {
 	r := chi.NewRouter()
 	r.Use(middleware2.Logger(log))
 	r.Use(middleware2.Recovery())
 	registerHomeRoutes(r)
 	registerCarRoutes(r, db, d)
-	registerVideoRoutes(r, db, d)
+	registerVideoRoutes(r, db, d, apify)
 	return r
 }
 
@@ -59,11 +59,10 @@ func registerCarRoutes(r *chi.Mux, db *pgxpool.Pool, d *dispatcher.Dispatcher) {
 	})
 }
 
-func registerVideoRoutes(r *chi.Mux, db *pgxpool.Pool, d *dispatcher.Dispatcher) {
+func registerVideoRoutes(r *chi.Mux, db *pgxpool.Pool, _ *dispatcher.Dispatcher, a *apify.Client) {
 
 	repoBlogger := blogger_repo.NewPostgres(db)
-	apifyClient := apify.NewClient("apify_api_hToHCZfuFv6sMfR0Z20rVpQ2W1b5Fx3uKK7W")
-	videoSearcher := apify.NewVideoSearcher(apifyClient)
+	videoSearcher := apify.NewVideoSearcher(a)
 	fetchVideoCmd := blogger_cmd.NewFetchBloggerVideos(repoBlogger, videoSearcher)
 	fetchVideoHandler := blogger_handler.NewGetCarHandler(fetchVideoCmd)
 

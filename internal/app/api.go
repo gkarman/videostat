@@ -53,7 +53,8 @@ func NewApi(ctx context.Context) (*Api, error) {
 	d := dispatcher.New()
 	events.RegisterEventHandlers(d, log, rabbitPublisher)
 
-	serverHttp := platform.NewHTTPServer(log, postgresDB, cfg, d)
+	apifyClient := platform.NewApifyClient(cfg)
+	serverHttp := platform.NewHTTPServer(log, postgresDB, cfg, d, apifyClient)
 	serverGrpc, err := platform.NewGRPCServer(ctx, log, postgresDB, cfg, d)
 	if err != nil {
 		err := rabbitPublisher.Close()

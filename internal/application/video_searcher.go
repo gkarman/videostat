@@ -1,4 +1,4 @@
-package blogger
+package application
 
 import (
 	"context"

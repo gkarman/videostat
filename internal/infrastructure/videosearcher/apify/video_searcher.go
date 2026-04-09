@@ -20,7 +20,7 @@ func NewVideoSearcher(client *Client) *VideoSearcher {
 }
 
 type youtubeVideo struct {
-	VideoID     string    `json:"id"` // или "videoId", зависит от актора
+	VideoID     string    `json:"id"`
 	URL         string    `json:"url"`
 	Title       string    `json:"title"`
 	Views       int64     `json:"viewCount"`
