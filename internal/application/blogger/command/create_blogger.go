@@ -5,8 +5,8 @@ import (
 	"fmt"
 
 	"github.com/gkarman/demo/internal/application"
-	"github.com/gkarman/demo/internal/application/blogger/reqdto"
-	"github.com/gkarman/demo/internal/application/blogger/respdto"
+	"github.com/gkarman/demo/internal/application/blogger/command/reqdto"
+	"github.com/gkarman/demo/internal/application/blogger/command/respdto"
 	"github.com/gkarman/demo/internal/domain/blogger"
 	"github.com/gkarman/demo/internal/domain/dictionary"
 	"github.com/gkarman/demo/internal/infrastructure/logger"

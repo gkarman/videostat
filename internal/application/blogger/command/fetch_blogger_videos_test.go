@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/gkarman/demo/internal/application/blogger/reqdto"
+	"github.com/gkarman/demo/internal/application/blogger/command/reqdto"
 	"github.com/gkarman/demo/internal/domain/blogger"
 	repo "github.com/gkarman/demo/internal/infrastructure/repository/blogger"
 	"github.com/gkarman/demo/internal/infrastructure/videosearcher"

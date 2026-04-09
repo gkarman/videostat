@@ -8,8 +8,7 @@ import (
 	"sync"
 
 	"github.com/gkarman/demo/internal/application/blogger/command"
-	"github.com/gkarman/demo/internal/application/blogger/reqdto"
-
+	"github.com/gkarman/demo/internal/application/blogger/command/reqdto"
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 )
 

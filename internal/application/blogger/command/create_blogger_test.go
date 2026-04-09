@@ -4,7 +4,7 @@ import (
 	"context"
 	"testing"
 
-	"github.com/gkarman/demo/internal/application/blogger/reqdto"
+	"github.com/gkarman/demo/internal/application/blogger/command/reqdto"
 	"github.com/gkarman/demo/internal/domain/blogger"
 	"github.com/gkarman/demo/internal/domain/dictionary"
 	"github.com/gkarman/demo/internal/infrastructure/dispatcher"

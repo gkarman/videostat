@@ -4,7 +4,7 @@ import (
 	"net/http"
 
 	"github.com/gkarman/demo/internal/application/blogger/command"
-	"github.com/gkarman/demo/internal/application/blogger/reqdto"
+	"github.com/gkarman/demo/internal/application/blogger/command/reqdto"
 	"github.com/gkarman/demo/internal/infrastructure/logger"
 	"github.com/go-chi/chi/v5"
 )
