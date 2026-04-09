@@ -5,6 +5,7 @@ import (
 	"log/slog"
 
 	"github.com/gkarman/demo/internal/application/blogger/command"
+	"github.com/gkarman/demo/internal/application/blogger/query"
 	"github.com/gkarman/demo/internal/config"
 	"github.com/gkarman/demo/internal/infrastructure/dispatcher"
 	"github.com/gkarman/demo/internal/infrastructure/repository/blogger"
@@ -15,8 +16,8 @@ import (
 
 func NewTelegramBot(log *slog.Logger, cfg *config.Config, db *pgxpool.Pool, d *dispatcher.Dispatcher) (*telegram.Bot, error) {
 	telegramCfg := &telegram.Config{
-		Token: cfg.TelegramBot.Token,
-		Debug: cfg.TelegramBot.Debug,
+		Token:   cfg.TelegramBot.Token,
+		Debug:   cfg.TelegramBot.Debug,
 		Timeout: cfg.TelegramBot.Timeout,
 	}
 
@@ -24,9 +25,12 @@ func NewTelegramBot(log *slog.Logger, cfg *config.Config, db *pgxpool.Pool, d *d
 	repoDictionary := dictionary.NewPostgres(db)
 	createBlogerCmd := command.NewCreateBlogger(repoBlogger, repoDictionary, d)
 
-	bot, err := telegram.NewBot(telegramCfg, log, createBlogerCmd)
+	repoBloggerRead := blogger.NewQueryPostgres(db)
+	listBloggersQuery := query.NewListBloggers(repoBloggerRead)
+
+	bot, err := telegram.NewBot(telegramCfg, log, createBlogerCmd, listBloggersQuery)
 	if err != nil {
-		return  nil, fmt.Errorf("error creating telegram bot: %w", err)
+		return nil, fmt.Errorf("error creating telegram bot: %w", err)
 	}
 
 	return bot, nil
