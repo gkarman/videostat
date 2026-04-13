@@ -1,7 +1,6 @@
 package platform
 
 import (
-	"fmt"
 	"log/slog"
 
 	"github.com/gkarman/demo/internal/application/blogger/command"
@@ -11,6 +10,7 @@ import (
 	"github.com/gkarman/demo/internal/infrastructure/repository/blogger"
 	"github.com/gkarman/demo/internal/infrastructure/repository/dictionary"
 	"github.com/gkarman/demo/internal/infrastructure/transport/telegram"
+	telergam_command "github.com/gkarman/demo/internal/infrastructure/transport/telegram/command"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
@@ -23,15 +23,24 @@ func NewTelegramBot(log *slog.Logger, cfg *config.Config, db *pgxpool.Pool, d *d
 
 	repoBlogger := blogger.NewPostgres(db)
 	repoDictionary := dictionary.NewPostgres(db)
-	createBlogerCmd := command.NewCreateBlogger(repoBlogger, repoDictionary, d)
-
 	repoBloggerRead := blogger.NewQueryPostgres(db)
+
+	createBlogerCmd := command.NewCreateBlogger(repoBlogger, repoDictionary, d)
 	listBloggersQuery := query.NewListBloggers(repoBloggerRead)
 
-	bot, err := telegram.NewBot(telegramCfg, log, createBlogerCmd, listBloggersQuery)
+	bot, err := telegram.NewBot(telegramCfg, log)
 	if err != nil {
-		return nil, fmt.Errorf("error creating telegram bot: %w", err)
+		return nil, err
 	}
+
+	router := telergam_command.NewRouter(
+		log,
+		bot,
+		createBlogerCmd,
+		listBloggersQuery,
+	)
+
+	bot.SetHandler(router)
 
 	return bot, nil
 }
