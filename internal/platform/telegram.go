@@ -27,6 +27,7 @@ func NewTelegramBot(log *slog.Logger, cfg *config.Config, db *pgxpool.Pool, d *d
 
 	createBlogerCmd := command.NewCreateBlogger(repoBlogger, repoDictionary, d)
 	listBloggersQuery := query.NewListBloggers(repoBloggerRead)
+	listVideosQuery := query.NewListVideos(repoBloggerRead)
 
 	bot, err := telegram.NewBot(telegramCfg, log)
 	if err != nil {
@@ -38,6 +39,7 @@ func NewTelegramBot(log *slog.Logger, cfg *config.Config, db *pgxpool.Pool, d *d
 		bot,
 		createBlogerCmd,
 		listBloggersQuery,
+		listVideosQuery,
 	)
 
 	bot.SetHandler(router)

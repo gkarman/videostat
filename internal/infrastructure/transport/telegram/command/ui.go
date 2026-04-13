@@ -23,6 +23,8 @@ func (u *UI) StartKeyboard() tgbotapi.InlineKeyboardMarkup {
 		tgbotapi.NewInlineKeyboardRow(
 			tgbotapi.NewInlineKeyboardButtonData("Создать блогера", "create_blogger"),
 			tgbotapi.NewInlineKeyboardButtonData("Список блогеров", "list_bloggers"),
+			tgbotapi.NewInlineKeyboardButtonData("Список видео", "list_videos"),
+			tgbotapi.NewInlineKeyboardButtonData("Экспорт видео в эксель", "export_videos"),
 		),
 	)
 }
@@ -33,5 +35,7 @@ func (u *UI) CommandsText() string {
 🚀 <code>/start</code>
 📖 <code>/help</code>
 ➕ <code>/create_blogger</code>
-📋 <code>/list_bloggers</code>`
+➕ <code>/list_bloggers</code>
+➕ <code>/export_videos</code>
+📋 <code>/list_videos</code>`
 }

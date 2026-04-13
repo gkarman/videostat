@@ -12,10 +12,14 @@ func commands() []tgbotapi.BotCommand {
 		{Command: "help", Description: "Список команд"},
 		{Command: "create_blogger", Description: "Создать блогера"},
 		{Command: "list_bloggers", Description: "Список блогеров"},
+		{Command: "list_videos", Description: "Список видео"},
+		{Command: "export_videos", Description: "Экспорт видео"},
 	}
 }
 
 func (r *Router) handleCommand(ctx context.Context, msg *tgbotapi.Message) {
+	r.log.Debug("command from telegram", "command", msg.Command())
+
 	switch msg.Command() {
 	case "start":
 		r.sendWithKeyboard(
@@ -29,6 +33,10 @@ func (r *Router) handleCommand(ctx context.Context, msg *tgbotapi.Message) {
 		r.askPlatform(msg.Chat.ID)
 	case "list_bloggers":
 		r.listBloggers(ctx, msg.Chat.ID)
+	case "list_videos":
+		r.listVideos(ctx, msg.Chat.ID)
+	case "export_videos":
+		r.exportVideos(ctx, msg.Chat.ID)
 	default:
 		r.send(msg.Chat.ID, "Неизвестная команда")
 	}

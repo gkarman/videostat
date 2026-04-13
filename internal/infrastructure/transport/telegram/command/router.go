@@ -17,6 +17,7 @@ type Router struct {
 
 	createBlogger *appcmd.CreateBlogger
 	listBloggersQuery  *appquery.ListBloggers
+	listVideosQuery  *appquery.ListVideos
 
 	state *State
 	ui    *UI
@@ -27,12 +28,14 @@ func NewRouter(
 	sender telegram.Sender,
 	createBlogger *appcmd.CreateBlogger,
 	listBloggers *appquery.ListBloggers,
+	listVideos *appquery.ListVideos,
 ) *Router {
 	return &Router{
 		log:           log,
 		sender:        sender,
 		createBlogger: createBlogger,
 		listBloggersQuery:  listBloggers,
+		listVideosQuery:  listVideos,
 		state:         NewState(),
 		ui:            NewUI(),
 	}

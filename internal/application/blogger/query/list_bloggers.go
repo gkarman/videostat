@@ -21,7 +21,7 @@ func (q *ListBloggers) Run(ctx context.Context) (*respdto.ListBloggers, error) {
 	log := logger.FromContext(ctx).With("component", "ListBloggers")
 	log.Debug("start query list blogger")
 
-	rows, err := q.repo.List(ctx)
+	rows, err := q.repo.ListBloggers(ctx)
 	if err != nil {
 		log.Error("list rows failed", "error", err)
 		return nil, err
@@ -36,7 +36,6 @@ func (q *ListBloggers) Run(ctx context.Context) (*respdto.ListBloggers, error) {
 		})
 	}
 	log.Debug("find bloggers", "items", items)
-
 
 	return &respdto.ListBloggers{
 		Items: items,
