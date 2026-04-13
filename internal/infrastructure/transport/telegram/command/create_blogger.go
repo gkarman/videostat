@@ -52,5 +52,11 @@ func (r *Router) handleCallback(ctx context.Context, q *tgbotapi.CallbackQuery) 
 
 	case q.Data == "list_bloggers":
 		r.listBloggers(ctx, q.Message.Chat.ID)
+
+	case q.Data == "list_videos":
+		r.listVideos(ctx, q.Message.Chat.ID)
+
+	case q.Data == "export_videos":
+		r.exportVideos(ctx, q.Message.Chat.ID)
 	}
 }

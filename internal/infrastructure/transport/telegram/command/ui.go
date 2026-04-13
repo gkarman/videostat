@@ -22,20 +22,15 @@ func (u *UI) StartKeyboard() tgbotapi.InlineKeyboardMarkup {
 	return tgbotapi.NewInlineKeyboardMarkup(
 		tgbotapi.NewInlineKeyboardRow(
 			tgbotapi.NewInlineKeyboardButtonData("Создать блогера", "create_blogger"),
+		),
+		tgbotapi.NewInlineKeyboardRow(
 			tgbotapi.NewInlineKeyboardButtonData("Список блогеров", "list_bloggers"),
+		),
+		tgbotapi.NewInlineKeyboardRow(
 			tgbotapi.NewInlineKeyboardButtonData("Список видео", "list_videos"),
-			tgbotapi.NewInlineKeyboardButtonData("Экспорт видео в эксель", "export_videos"),
+		),
+		tgbotapi.NewInlineKeyboardRow(
+			tgbotapi.NewInlineKeyboardButtonData("Экспорт видео в Excel", "export_videos"),
 		),
 	)
-}
-
-func (u *UI) CommandsText() string {
-	return `<b>Доступные команды</b>
-
-🚀 <code>/start</code>
-📖 <code>/help</code>
-➕ <code>/create_blogger</code>
-➕ <code>/list_bloggers</code>
-➕ <code>/export_videos</code>
-📋 <code>/list_videos</code>`
 }

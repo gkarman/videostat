@@ -9,7 +9,6 @@ import (
 func commands() []tgbotapi.BotCommand {
 	return []tgbotapi.BotCommand{
 		{Command: "start", Description: "Запуск бота"},
-		{Command: "help", Description: "Список команд"},
 		{Command: "create_blogger", Description: "Создать блогера"},
 		{Command: "list_bloggers", Description: "Список блогеров"},
 		{Command: "list_videos", Description: "Список видео"},
@@ -27,8 +26,6 @@ func (r *Router) handleCommand(ctx context.Context, msg *tgbotapi.Message) {
 			"Привет! Выбери действие:",
 			r.ui.StartKeyboard(),
 		)
-	case "help":
-		r.send(msg.Chat.ID, r.ui.CommandsText())
 	case "create_blogger":
 		r.askPlatform(msg.Chat.ID)
 	case "list_bloggers":

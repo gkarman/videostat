@@ -1,7 +1,6 @@
 package command
 
 import (
-	"bytes"
 	"context"
 	"fmt"
 
@@ -18,18 +17,17 @@ func (r *Router) exportVideos(ctx context.Context, chatID int64) {
 		return
 	}
 
-	f, err := excel.BuildVideosSheet(res.Items)
+	// Excel workbook с листами: youtube / tiktok / instagram
+	f, err := excel.BuildVideosWorkbook(res.Items)
 	if err != nil {
 		r.send(chatID, "Ошибка генерации Excel")
 		return
 	}
-
 	defer func() {
 		_ = f.Close()
 	}()
 
-	var buf *bytes.Buffer
-	buf, err = f.WriteToBuffer()
+	buf, err := f.WriteToBuffer()
 	if err != nil {
 		r.send(chatID, "Ошибка записи Excel файла")
 		return
@@ -41,7 +39,7 @@ func (r *Router) exportVideos(ctx context.Context, chatID int64) {
 	}
 
 	msg := tgbotapi.NewDocument(chatID, file)
-	msg.Caption = "📊 Экспорт видео"
+	msg.Caption = "📊 Экспорт видео по платформам"
 
 	_ = r.sender.Send(msg)
 }
