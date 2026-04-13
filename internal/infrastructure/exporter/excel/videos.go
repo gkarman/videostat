@@ -49,14 +49,14 @@ func groupByPlatform(items []*view.Video) map[string][]*view.Video {
 
 func writeVideosSheet(f *excelize.File, sheet string, videos []*view.Video) error {
 	headers := []string{
+		"BloggerURL",
 		"Title",
+		"URL",
+		"PublishedAt",
+		"CreatedAt",
 		"Views",
 		"Likes",
 		"Comments",
-		"PublishedAt",
-		"CreatedAt",
-		"URL",
-		"BloggerURL",
 	}
 
 	for i, h := range headers {
@@ -69,28 +69,39 @@ func writeVideosSheet(f *excelize.File, sheet string, videos []*view.Video) erro
 		}
 	}
 
+	set := func(row, col int, value any) error {
+		cell, err := excelize.CoordinatesToCellName(col, row)
+		if err != nil {
+			return err
+		}
+		return f.SetCellValue(sheet, cell, value)
+	}
+
 	for i, v := range videos {
 		row := i + 2
 
-		if err := f.SetCellValue(sheet, fmt.Sprintf("A%d", row), v.Title); err != nil {
+		if err := set(row, 1, v.BloggerURL); err != nil {
 			return err
 		}
-		if err := f.SetCellValue(sheet, fmt.Sprintf("B%d", row), v.Views); err != nil {
+		if err := set(row, 2, v.Title); err != nil {
 			return err
 		}
-		if err := f.SetCellValue(sheet, fmt.Sprintf("C%d", row), v.Likes); err != nil {
+		if err := set(row, 3, v.URL); err != nil {
 			return err
 		}
-		if err := f.SetCellValue(sheet, fmt.Sprintf("D%d", row), v.Comments); err != nil {
+		if err := set(row, 4, v.PublishedAt.Format("2006-01-02")); err != nil {
 			return err
 		}
-		if err := f.SetCellValue(sheet, fmt.Sprintf("E%d", row), v.PublishedAt.Format("2006-01-02 15:04")); err != nil {
+		if err := set(row, 5, v.CreatedAt.Format("2006-01-02")); err != nil {
 			return err
 		}
-		if err := f.SetCellValue(sheet, fmt.Sprintf("F%d", row), v.CreatedAt.Format("2006-01-02 15:04")); err != nil {
+		if err := set(row, 6, v.Views); err != nil {
 			return err
 		}
-		if err := f.SetCellValue(sheet, fmt.Sprintf("G%d", row), v.URL); err != nil {
+		if err := set(row, 7, v.Likes); err != nil {
+			return err
+		}
+		if err := set(row, 8, v.Comments); err != nil {
 			return err
 		}
 	}
