@@ -10,7 +10,11 @@ import (
 )
 
 func (r *Router) askPlatform(chatID int64) {
-	r.send(chatID, "Выбери платформу: youtube / tiktok")
+	r.sendWithKeyboard(
+		chatID,
+		"Выбери платформу:",
+		r.ui.PlatformKeyboard(),
+	)
 }
 
 func (r *Router) handleFSM(ctx context.Context, msg *tgbotapi.Message) bool {

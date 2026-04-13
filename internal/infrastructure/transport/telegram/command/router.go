@@ -61,3 +61,10 @@ func (r *Router) send(chatID int64, text string) {
 	msg.ParseMode = tgbotapi.ModeHTML
 	_ = r.sender.Send(msg)
 }
+
+func (r *Router) sendWithKeyboard(chatID int64, text string, kb tgbotapi.InlineKeyboardMarkup) {
+	msg := tgbotapi.NewMessage(chatID, text)
+	msg.ParseMode = tgbotapi.ModeHTML
+	msg.ReplyMarkup = kb
+	_ = r.sender.Send(msg)
+}

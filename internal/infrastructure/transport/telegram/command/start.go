@@ -18,7 +18,11 @@ func commands() []tgbotapi.BotCommand {
 func (r *Router) handleCommand(ctx context.Context, msg *tgbotapi.Message) {
 	switch msg.Command() {
 	case "start":
-		r.send(msg.Chat.ID, "Привет! Выбери действие:")
+		r.sendWithKeyboard(
+			msg.Chat.ID,
+			"Привет! Выбери действие:",
+			r.ui.StartKeyboard(),
+		)
 	case "help":
 		r.send(msg.Chat.ID, r.ui.CommandsText())
 	case "create_blogger":
