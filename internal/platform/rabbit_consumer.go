@@ -8,7 +8,7 @@ import (
 	"github.com/gkarman/demo/internal/infrastructure/mq"
 )
 
-func NewRabbitConsumer(cfg *config.Config, log *slog.Logger) (*mq.RabbitConsumer, error) {
+func NewRabbitConsumer(cfg *config.Config, log *slog.Logger, queue string, bindings []string) (*mq.RabbitConsumer, error) {
 	configRabbit := mq.Config{
 		User:           cfg.RabbitMQ.User,
 		Password:       cfg.RabbitMQ.Password,
@@ -20,11 +20,8 @@ func NewRabbitConsumer(cfg *config.Config, log *slog.Logger) (*mq.RabbitConsumer
 
 	consumer := mq.NewRabbitConsumer(
 		configRabbit,
-		"worker.notify",
-		[]string{
-			"car.#",
-			"user.#",
-		},
+		queue,
+		bindings,
 		log,
 	)
 

@@ -17,6 +17,9 @@ run:
 run_worker_notify:
 	$(call run_with_env,go run ./cmd/worker_notify)
 
+run_worker_core:
+	$(call run_with_env,go run ./cmd/worker_core)
+
 run_worker_cron:
 	$(call run_with_env,go run ./cmd/worker_cron)
 

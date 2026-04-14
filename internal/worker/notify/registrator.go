@@ -8,7 +8,7 @@ import (
 )
 
 func NewRouterWithHandlers(log *slog.Logger) *Router {
-	r := NewRouter()
+	r := NewRouter(log)
 
 	carCreated := handlers.NewCarCreatedHandler(log)
 	carUpdated := handlers.NewCarUpdatedHandler(log)

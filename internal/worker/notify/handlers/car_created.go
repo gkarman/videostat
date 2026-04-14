@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"context"
 	"encoding/json"
 	"log/slog"
 
@@ -15,7 +16,7 @@ func NewCarCreatedHandler(log *slog.Logger) *CarCreatedHandler {
 	return &CarCreatedHandler{log: log}
 }
 
-func (h *CarCreatedHandler) Handle(body []byte) error {
+func (h *CarCreatedHandler) Handle(ctx context.Context, body []byte) error {
 	var evt events.CarCreatedV1
 
 	if err := json.Unmarshal(body, &evt); err != nil {

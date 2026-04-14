@@ -1,5 +1,7 @@
 package blogger
 
+import "time"
+
 type Blogger struct {
 	ID         string
 	PlatformID int
@@ -19,8 +21,9 @@ func Create(req CreateBloggerDto) (*Blogger, error) {
 	}
 
 	event := &Created{
-		ID:   blogger.ID,
+		ID:  blogger.ID,
 		URL: blogger.URL,
+		At:   time.Now(),
 	}
 	blogger.addEvent(event)
 

@@ -6,10 +6,10 @@ import (
 
 	"github.com/gkarman/demo/internal/config"
 	"github.com/gkarman/demo/internal/platform"
-	"github.com/gkarman/demo/internal/worker/notify"
+	"github.com/gkarman/demo/internal/worker/core"
 )
 
-func NewWorkerNotify(ctx context.Context) (*notify.Worker, error) {
+func NewWorkerCore(ctx context.Context) (*core.Worker, error) {
 	cfg, err := config.LoadConfig()
 	if err != nil {
 		return nil, err
@@ -28,20 +28,20 @@ func NewWorkerNotify(ctx context.Context) (*notify.Worker, error) {
 	consumer, err := platform.NewRabbitConsumer(
 		cfg,
 		log,
-		"worker.notify",
+		"worker.core",
 		[]string{
-			"car.#",
-			"user.#",
 			"blogger.#",
-	})
+		})
 	if err != nil {
 		db.Close()
 		return nil, fmt.Errorf("init rabbit consumer: %w", err)
 	}
+
 	log.Info("rabbit consumer connected")
 
-	router := notify.NewRouterWithHandlers(log)
-	worker := notify.New(log, consumer, router)
+	apifyClient := platform.NewApifyClient(cfg)
+	router := core.NewRouterWithHandlers(log, db, apifyClient)
+	worker := core.New(log, consumer, router)
 
 	return worker, nil
 }
