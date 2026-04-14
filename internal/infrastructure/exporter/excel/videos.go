@@ -59,6 +59,34 @@ func writeVideosSheet(f *excelize.File, sheet string, videos []*view.Video) erro
 		"Comments",
 	}
 
+	// --- Форматирование колонок и стилей ---
+
+	// Широкая колонка для URL блогера
+	if err := f.SetColWidth(sheet, "A", "A", 45); err != nil {
+		return fmt.Errorf("set col width A: %w", err)
+	}
+
+	// Остальные колонки средней ширины
+	if err := f.SetColWidth(sheet, "B", "H", 20); err != nil {
+		return fmt.Errorf("set col width B-H: %w", err)
+	}
+
+	// Стиль без переноса строк (чтобы Title не раздувал высоту)
+	style, err := f.NewStyle(&excelize.Style{
+		Alignment: &excelize.Alignment{
+			WrapText: false,
+		},
+	})
+	if err != nil {
+		return fmt.Errorf("new style: %w", err)
+	}
+
+	if err := f.SetColStyle(sheet, "A:H", style); err != nil {
+		return fmt.Errorf("set col style: %w", err)
+	}
+
+	// --- Заголовки ---
+
 	for i, h := range headers {
 		cell, err := excelize.CoordinatesToCellName(i+1, 1)
 		if err != nil {
@@ -76,6 +104,8 @@ func writeVideosSheet(f *excelize.File, sheet string, videos []*view.Video) erro
 		}
 		return f.SetCellValue(sheet, cell, value)
 	}
+
+	// --- Данные ---
 
 	for i, v := range videos {
 		row := i + 2
@@ -106,6 +136,13 @@ func writeVideosSheet(f *excelize.File, sheet string, videos []*view.Video) erro
 		}
 	}
 
+	// --- Фиксированная высота строк ---
+
+	for i := 1; i <= len(videos)+1; i++ {
+		if err := f.SetRowHeight(sheet, i, 18); err != nil {
+			return err
+		}
+	}
+
 	return nil
 }
-
