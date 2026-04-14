@@ -8,7 +8,7 @@ import (
 
 func MapBloggerCreated(e *blogger.Created) contracts.BloggerCreatedV1 {
 	return contracts.BloggerCreatedV1{
-		EventType:  contracts.EventCarCreatedV1,
+		EventType:  contracts.EventBloggerCreatedV1,
 		EventID:    uuid.New().String(),
 		BloggerID:  e.ID,
 		BloggerURL: e.URL,

@@ -28,6 +28,7 @@ func (r *Router) Register(eventType string, handler Handler) {
 func (r *Router) Handle(eventType string, body []byte) error {
 	h, ok := r.handlers[eventType]
 	if !ok {
+		r.log.Debug("no handler for event type %s", eventType)
 		return nil
 	}
 
