@@ -6,16 +6,17 @@ import (
 	"log/slog"
 
 	"github.com/gkarman/demo/internal/infrastructure/mq"
+	"github.com/gkarman/demo/internal/worker"
 )
 
 
 type Worker struct {
 	log      *slog.Logger
 	consumer *mq.RabbitConsumer
-	router   *Router
+	router   *worker.Router
 }
 
-func New(log *slog.Logger, consumer *mq.RabbitConsumer, router *Router) *Worker {
+func New(log *slog.Logger, consumer *mq.RabbitConsumer, router *worker.Router) *Worker {
 	return &Worker{
 		log:      log,
 		consumer: consumer,

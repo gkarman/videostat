@@ -4,11 +4,12 @@ import (
 	"log/slog"
 
 	"github.com/gkarman/demo/internal/infrastructure/contracts/events"
+	"github.com/gkarman/demo/internal/worker"
 	"github.com/gkarman/demo/internal/worker/notify/handlers"
 )
 
-func NewRouterWithHandlers(log *slog.Logger) *Router {
-	r := NewRouter(log)
+func NewRouterWithHandlers(log *slog.Logger) *worker.Router {
+	r := worker.NewRouter(log)
 
 	carCreated := handlers.NewCarCreatedHandler(log)
 	carUpdated := handlers.NewCarUpdatedHandler(log)

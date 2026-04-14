@@ -23,6 +23,7 @@ func NewBloggerCreatedHandler(log *slog.Logger, command *command.FetchBloggerVid
 
 func (h *BloggerCreatedHandler) Handle(ctx context.Context, body []byte) error {
 	log := logger.FromContext(ctx)
+	log.Debug("starting BloggerCreated handler")
 
 	var evt events.BloggerCreatedV1
 
@@ -33,6 +34,7 @@ func (h *BloggerCreatedHandler) Handle(ctx context.Context, body []byte) error {
 	req := reqdto.FetchBloggerVideos{
 		BloggerID: evt.BloggerID,
 	}
+	log.Debug("BloggerCreated handler", "req", req)
 
 	err := h.command.Execute(ctx, req)
 	if err != nil {
