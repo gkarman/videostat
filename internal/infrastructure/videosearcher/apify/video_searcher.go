@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/gkarman/demo/internal/domain/blogger"
@@ -31,24 +32,23 @@ type youtubeVideo struct {
 
 type tiktokVideo struct {
 	ID          string    `json:"id"`
-	URL         string    `json:"url"`
-	Title       string    `json:"title"`
-	Likes       int64     `json:"likes"`
-	Views       int64     `json:"views"`
-	Comments    int64     `json:"comments"`
-	PublishedAt time.Time `json:"createdAt"`
+	URL         string    `json:"webVideoUrl"`
+	Title       string    `json:"text"`
+	Likes       int64     `json:"diggCount"`
+	Views       int64     `json:"playCount"`
+	Comments    int64     `json:"commentCount"`
+	PublishedAt time.Time `json:"createTimeISO"`
 }
 
 type instaVideo struct {
 	ID          string    `json:"id"`
-	URL         string    `json:"link"`
+	URL         string    `json:"url"`
 	Title       string    `json:"caption"`
-	Likes       int64     `json:"likeCount"`
-	Views       int64     `json:"viewCount"`
+	Likes       int64     `json:"likesCount"`
+	Views       int64     `json:"videoViewCount"`
 	Comments    int64     `json:"commentsCount"`
-	PublishedAt time.Time `json:"takenAt"`
+	PublishedAt time.Time `json:"timestamp"`
 }
-
 
 func (s *VideoSearcher) Search(ctx context.Context, b *blogger.Blogger) ([]*blogger.Video, error) {
 	switch b.PlatformID {
@@ -64,12 +64,17 @@ func (s *VideoSearcher) Search(ctx context.Context, b *blogger.Blogger) ([]*blog
 }
 
 func (s *VideoSearcher) searchYouTube(ctx context.Context, b *blogger.Blogger) ([]*blogger.Video, error) {
+	var (
+		maxResultsShorts = 10
+		days             = 40
+	)
+
 	log := logger.FromContext(ctx)
 
 	log.Debug("находим данные для блогера", "id", b.ID, "url", b.URL)
 	input := map[string]any{
-		"channels": []string{b.URL},
-		"maxResultsShorts": 10,
+		"channels":         []string{b.URL},
+		"maxResultsShorts": maxResultsShorts,
 	}
 
 	raw, err := s.client.RunActorSync(ctx, "streamers~youtube-shorts-scraper", input)
@@ -85,48 +90,71 @@ func (s *VideoSearcher) searchYouTube(ctx context.Context, b *blogger.Blogger) (
 	log.Debug("проверка", "кол-во элементов", len(items))
 	log.Debug("проверка", "элементы", items)
 
-	days := 40
 	return s.youtubeToVideos(b, items, days), nil
 }
 
 func (s *VideoSearcher) searchTikTok(ctx context.Context, b *blogger.Blogger) ([]*blogger.Video, error) {
+	var (
+		maxItems       = 5
+		resultsPerPage = 5
+		days           = 30
+	)
+
+	log := logger.FromContext(ctx)
+	log.Debug("находим данные для блогера (tiktok)", "id", b.ID, "url", b.URL)
+
 	input := map[string]any{
-		"startUrls":  []map[string]string{{"url": b.URL}},
-		"maxResults": 10,
+		"profiles":              []string{extractTikTokUsername(b.URL)},
+		"maxItems":              maxItems,
+		"resultsPerPage":        resultsPerPage,
+		"profileScrapeSections": []string{"videos"},
 	}
 	raw, err := s.client.RunActorSync(ctx, "clockworks~tiktok-scraper", input)
 	if err != nil {
 		return nil, err
 	}
+	log.Debug("tiktok", "raw", raw)
 
 	var items []tiktokVideo
 	if err := json.Unmarshal(raw, &items); err != nil {
 		return nil, err
 	}
 
-	days := 10
+	log.Debug("tiktok", "items", items)
 	return s.tiktokToVideos(b, items, days), nil
 }
 
 func (s *VideoSearcher) searchInstagram(ctx context.Context, b *blogger.Blogger) ([]*blogger.Video, error) {
+	var (
+		maxResults = 10
+		days       = 30
+	)
+
+	log := logger.FromContext(ctx)
+	log.Debug("находим данные для блогера (Instagram)", "id", b.ID, "url", b.URL)
+
 	input := map[string]any{
-		"startUrls":  []map[string]string{{"url": b.URL}},
-		"maxResults": 10,
+		"directUrls":    []string{b.URL},
+		"addParentData": false,
+		"resultsLimit":  maxResults,
+		"searchLimit":   maxResults,
+		"resultsType":   "reels",
+		"searchType":    "hashtag",
 	}
 	raw, err := s.client.RunActorSync(ctx, "apify~instagram-scraper", input)
 	if err != nil {
 		return nil, err
 	}
+	log.Debug("instagram", "raw", raw)
 
 	var items []instaVideo
 	if err := json.Unmarshal(raw, &items); err != nil {
 		return nil, err
 	}
+	log.Debug("instagram", "items", items)
 
-	days := 10
 	return s.instaToVideos(b, items, days), nil
 }
-
 
 func (s *VideoSearcher) youtubeToVideos(b *blogger.Blogger, items []youtubeVideo, days int) []*blogger.Video {
 	now := time.Now()
@@ -153,13 +181,9 @@ func (s *VideoSearcher) youtubeToVideos(b *blogger.Blogger, items []youtubeVideo
 }
 
 func (s *VideoSearcher) tiktokToVideos(b *blogger.Blogger, items []tiktokVideo, days int) []*blogger.Video {
-	now := time.Now()
-	minDate := now.AddDate(0, 0, -days)
 	var result []*blogger.Video
+
 	for _, it := range items {
-		if it.PublishedAt.Before(minDate) {
-			continue
-		}
 		result = append(result, &blogger.Video{
 			ID:          uuid.NewString(),
 			BloggerID:   b.ID,
@@ -170,9 +194,10 @@ func (s *VideoSearcher) tiktokToVideos(b *blogger.Blogger, items []tiktokVideo, 
 			Likes:       it.Likes,
 			Comments:    it.Comments,
 			PublishedAt: it.PublishedAt,
-			CreatedAt:   now,
+			CreatedAt:   time.Now(),
 		})
 	}
+
 	return result
 }
 
@@ -198,4 +223,13 @@ func (s *VideoSearcher) instaToVideos(b *blogger.Blogger, items []instaVideo, da
 		})
 	}
 	return result
+}
+
+func extractTikTokUsername(url string) string {
+	// https://www.tiktok.com/@humphreytalks -> humphreytalks
+	parts := strings.Split(url, "@")
+	if len(parts) < 2 {
+		return ""
+	}
+	return strings.Split(parts[1], "?")[0]
 }
