@@ -11,10 +11,10 @@ import (
 
 type ListVideos struct {
 	repo     blogger.ReadRepo
-	enricher VideoMetricsEnricher
+	enricher VideoEnricher
 }
 
-func NewListVideos(repo blogger.ReadRepo, enricher VideoMetricsEnricher) *ListVideos {
+func NewListVideos(repo blogger.ReadRepo, enricher VideoEnricher) *ListVideos {
 	return &ListVideos{
 		repo:     repo,
 		enricher: enricher,

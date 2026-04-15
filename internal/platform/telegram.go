@@ -26,11 +26,15 @@ func NewTelegramBot(log *slog.Logger, cfg *config.Config, db *pgxpool.Pool, d *d
 	repoDictionary := dictionary.NewPostgres(db)
 	repoBloggerRead := blogger.NewQueryPostgres(db)
 
-	metrics := analytics.NewVideoMetrics()
+
 
 	createBlogerCmd := command.NewCreateBlogger(repoBlogger, repoDictionary, d)
 	listBloggersQuery := query.NewListBloggers(repoBloggerRead)
-	listVideosQuery := query.NewListVideos(repoBloggerRead, metrics)
+
+	viralEnricher := analytics.NewViralEnricher()
+	relevantEnricher := analytics.NewRelevanceEnricher()
+	enricher := analytics.NewVideoMetricsEnricher(viralEnricher, relevantEnricher)
+	listVideosQuery := query.NewListVideos(repoBloggerRead, enricher)
 
 	bot, err := telegram.NewBot(telegramCfg, log)
 	if err != nil {

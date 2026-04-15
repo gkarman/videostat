@@ -14,4 +14,5 @@ type Video struct {
 	PublishedAt time.Time `json:"published_at"`
 	CreatedAt   time.Time `json:"created_at"`
 	Viral       bool      `json:"viral"`
+	IsRelevant  bool      `json:"is_relevant"`
 }

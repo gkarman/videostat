@@ -60,6 +60,7 @@ func writeVideosSheet(f *excelize.File, sheet string, videos []*view.Video) erro
 		"Likes",
 		"Comments",
 		"Viral",
+		"Relevant Title",
 	}
 
 	// --- Форматирование колонок и стилей ---
@@ -68,8 +69,8 @@ func writeVideosSheet(f *excelize.File, sheet string, videos []*view.Video) erro
 		return fmt.Errorf("set col width A: %w", err)
 	}
 
-	if err := f.SetColWidth(sheet, "B", "I", 20); err != nil {
-		return fmt.Errorf("set col width B-I: %w", err)
+	if err := f.SetColWidth(sheet, "B", "J", 20); err != nil {
+		return fmt.Errorf("set col width B-J: %w", err)
 	}
 
 	style, err := f.NewStyle(&excelize.Style{
@@ -81,7 +82,7 @@ func writeVideosSheet(f *excelize.File, sheet string, videos []*view.Video) erro
 		return fmt.Errorf("new style: %w", err)
 	}
 
-	if err := f.SetColStyle(sheet, "A:I", style); err != nil {
+	if err := f.SetColStyle(sheet, "A:J", style); err != nil {
 		return fmt.Errorf("set col style: %w", err)
 	}
 
@@ -104,7 +105,6 @@ func writeVideosSheet(f *excelize.File, sheet string, videos []*view.Video) erro
 		}
 		return f.SetCellValue(sheet, cell, value)
 	}
-
 
 	// --- Данные ---
 
@@ -141,6 +141,15 @@ func writeVideosSheet(f *excelize.File, sheet string, videos []*view.Video) erro
 			mark = "+"
 		}
 		if err := set(row, 9, mark); err != nil {
+			return err
+		}
+
+		relevant := "-"
+		if v.IsRelevant {
+			relevant = "+"
+		}
+
+		if err := set(row, 10, relevant); err != nil {
 			return err
 		}
 	}
