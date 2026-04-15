@@ -10,11 +10,15 @@ import (
 )
 
 type ListVideos struct {
-	repo blogger.ReadRepo
+	repo     blogger.ReadRepo
+	enricher VideoMetricsEnricher
 }
 
-func NewListVideos(repo blogger.ReadRepo) *ListVideos {
-	return &ListVideos{repo: repo}
+func NewListVideos(repo blogger.ReadRepo, enricher VideoMetricsEnricher) *ListVideos {
+	return &ListVideos{
+		repo:     repo,
+		enricher: enricher,
+	}
 }
 
 func (q *ListVideos) Run(ctx context.Context) (*respdto.ListVideos, error) {
@@ -42,6 +46,7 @@ func (q *ListVideos) Run(ctx context.Context) (*respdto.ListVideos, error) {
 			CreatedAt:   r.CreatedAt,
 		})
 	}
+	q.enricher.Enrich(items)
 	log.Debug("find bloggers", "items", items)
 
 	return &respdto.ListVideos{

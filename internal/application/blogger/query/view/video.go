@@ -13,4 +13,5 @@ type Video struct {
 	Comments    int       `json:"comments"`
 	PublishedAt time.Time `json:"published_at"`
 	CreatedAt   time.Time `json:"created_at"`
+	Viral       bool      `json:"viral"`
 }

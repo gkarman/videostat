@@ -3,6 +3,7 @@ package platform
 import (
 	"log/slog"
 
+	"github.com/gkarman/demo/internal/application/blogger/analytics"
 	"github.com/gkarman/demo/internal/application/blogger/command"
 	"github.com/gkarman/demo/internal/application/blogger/query"
 	"github.com/gkarman/demo/internal/config"
@@ -25,9 +26,11 @@ func NewTelegramBot(log *slog.Logger, cfg *config.Config, db *pgxpool.Pool, d *d
 	repoDictionary := dictionary.NewPostgres(db)
 	repoBloggerRead := blogger.NewQueryPostgres(db)
 
+	metrics := analytics.NewVideoMetrics()
+
 	createBlogerCmd := command.NewCreateBlogger(repoBlogger, repoDictionary, d)
 	listBloggersQuery := query.NewListBloggers(repoBloggerRead)
-	listVideosQuery := query.NewListVideos(repoBloggerRead)
+	listVideosQuery := query.NewListVideos(repoBloggerRead, metrics)
 
 	bot, err := telegram.NewBot(telegramCfg, log)
 	if err != nil {

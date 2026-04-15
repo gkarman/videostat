@@ -47,6 +47,8 @@ func groupByPlatform(items []*view.Video) map[string][]*view.Video {
 	return res
 }
 
+// ================= SHEET =================
+
 func writeVideosSheet(f *excelize.File, sheet string, videos []*view.Video) error {
 	headers := []string{
 		"BloggerURL",
@@ -57,21 +59,19 @@ func writeVideosSheet(f *excelize.File, sheet string, videos []*view.Video) erro
 		"Views",
 		"Likes",
 		"Comments",
+		"Viral",
 	}
 
 	// --- Форматирование колонок и стилей ---
 
-	// Широкая колонка для URL блогера
 	if err := f.SetColWidth(sheet, "A", "A", 45); err != nil {
 		return fmt.Errorf("set col width A: %w", err)
 	}
 
-	// Остальные колонки средней ширины
-	if err := f.SetColWidth(sheet, "B", "H", 20); err != nil {
-		return fmt.Errorf("set col width B-H: %w", err)
+	if err := f.SetColWidth(sheet, "B", "I", 20); err != nil {
+		return fmt.Errorf("set col width B-I: %w", err)
 	}
 
-	// Стиль без переноса строк (чтобы Title не раздувал высоту)
 	style, err := f.NewStyle(&excelize.Style{
 		Alignment: &excelize.Alignment{
 			WrapText: false,
@@ -81,7 +81,7 @@ func writeVideosSheet(f *excelize.File, sheet string, videos []*view.Video) erro
 		return fmt.Errorf("new style: %w", err)
 	}
 
-	if err := f.SetColStyle(sheet, "A:H", style); err != nil {
+	if err := f.SetColStyle(sheet, "A:I", style); err != nil {
 		return fmt.Errorf("set col style: %w", err)
 	}
 
@@ -104,6 +104,7 @@ func writeVideosSheet(f *excelize.File, sheet string, videos []*view.Video) erro
 		}
 		return f.SetCellValue(sheet, cell, value)
 	}
+
 
 	// --- Данные ---
 
@@ -132,6 +133,14 @@ func writeVideosSheet(f *excelize.File, sheet string, videos []*view.Video) erro
 			return err
 		}
 		if err := set(row, 8, v.Comments); err != nil {
+			return err
+		}
+
+		mark := ""
+		if v.Viral {
+			mark = "+"
+		}
+		if err := set(row, 9, mark); err != nil {
 			return err
 		}
 	}
