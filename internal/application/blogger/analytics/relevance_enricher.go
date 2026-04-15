@@ -13,11 +13,40 @@ type RelevanceEnricher struct {
 func NewRelevanceEnricher() *RelevanceEnricher {
 	return &RelevanceEnricher{
 		keywords: []string{
-			"пенсия",
-			"пенсион",
-			"пенсионный возраст",
-			"pension",
+			// core retirement
 			"retirement",
+			"retire",
+			"retiring",
+			"early retirement",
+
+			// pension
+			"pension",
+			"pension plan",
+			"pension benefits",
+			"defined benefit",
+			"defined contribution",
+
+			// social security (US/EU common topic)
+			"social security",
+			"social security benefits",
+			"ss benefits",
+			"retirement benefits",
+
+			// taxes
+			"retirement tax",
+			"tax on retirement",
+			"taxes in retirement",
+			"pension tax",
+			"tax deferred",
+			"tax advantaged",
+
+			// planning / finance context
+			"retirement planning",
+			"retirement savings",
+			"401k",
+			"ira",
+			"roth ira",
+			"pension fund",
 		},
 	}
 }
