@@ -71,6 +71,15 @@ type TelegramBotConfig struct {
 }
 
 type ApifyConfig struct {
-	Token string `env:"APIFY_TOKEN" env-default:""`
-	Host  string `env:"APIFY_HOST" env-default:""`
+	Token 					string `env:"APIFY_TOKEN" env-default:""`
+	Host  					string `env:"APIFY_HOST" env-default:""`
+
+	YoutubeMaxVideos   int `env:"APIFY_YOUTUBE_MAX_VIDEOS" env-default:"10"`
+	YoutubeDays        int `env:"APIFY_YOUTUBE_DAYS" env-default:"10"`
+
+	TiktokMaxVideos    int `env:"APIFY_TIKTOK_MAX_VIDEOS" env-default:"10"`
+	TiktokDays         int `env:"APIFY_TIKTOK_DAYS" env-default:"10"`
+
+	InstagramMaxVideos int `env:"APIFY_INSTAGRAM_MAX_VIDEOS" env-default:"10"`
+	InstagramDays      int `env:"APIFY_INSTAGRAM_DAYS" env-default:"10"`
 }

@@ -5,6 +5,9 @@ import (
 	"log/slog"
 	"time"
 
+	"github.com/gkarman/demo/internal/application/blogger/command"
+	"github.com/gkarman/demo/internal/infrastructure/repository/blogger"
+	"github.com/gkarman/demo/internal/infrastructure/videosearcher/apify"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/robfig/cron/v3"
 )
@@ -14,9 +17,10 @@ type Worker struct {
 	db   *pgxpool.Pool
 	cron *cron.Cron
 	ctx  context.Context
+	apifyClient *apify.Client
 }
 
-func New(log *slog.Logger, db *pgxpool.Pool) (*Worker, error) {
+func New(log *slog.Logger, db *pgxpool.Pool, apifyClient *apify.Client) (*Worker, error) {
 	c := cron.New(
 		cron.WithLocation(time.Local),
 		cron.WithChain(
@@ -47,12 +51,23 @@ func (w *Worker) Run(ctx context.Context) error {
 }
 
 func (w *Worker) registerJobs() error {
-	_, err := w.cron.AddFunc("@hourly", w.hourlyJob)
+	_, err := w.cron.AddFunc("0 3 * * *", w.refreshAllBloggers)
+
 	return err
 }
 
-func (w *Worker) hourlyJob() {
-	w.log.Info("hourly job started")
-	// use-case
-	w.log.Info("hourly job finished")
+func (w *Worker) refreshAllBloggers() {
+	bloggerRepo := blogger.NewPostgres(w.db)
+	videoSearcher := apify.NewVideoSearcher(w.apifyClient)
+	fetchVideoCmd := command.NewFetchBloggerVideos(bloggerRepo, videoSearcher)
+
+	refreshCmd := command.NewRefreshAllBloggers(
+		bloggerRepo,
+		fetchVideoCmd,
+	)
+
+	err := refreshCmd.Execute(w.ctx)
+	if err != nil {
+		w.log.Error("Failed to refresh all Bloggers.", err)
+	}
 }

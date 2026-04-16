@@ -154,3 +154,7 @@ func (r *PostgresRepo) ListVideosByBlogger(ctx context.Context, bloggerID string
 
 	return result, nil
 }
+
+func (r *PostgresRepo) List(ctx context.Context) ([]*blogger.Blogger, error) {
+	return nil, nil
+}

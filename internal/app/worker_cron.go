@@ -24,7 +24,9 @@ func NewWorkerCron(ctx context.Context) (*cronworker.Worker, error) {
 	}
 	log.Info("db connected")
 
-	worker, err := cronworker.New(log, db)
+	apifyClient := platform.NewApifyClient(cfg)
+
+	worker, err := cronworker.New(log, db, apifyClient)
 	if err != nil {
 		return nil, fmt.Errorf("create worker cron: %w", err)
 	}

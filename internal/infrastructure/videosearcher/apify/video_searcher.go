@@ -65,8 +65,8 @@ func (s *VideoSearcher) Search(ctx context.Context, b *blogger.Blogger) ([]*blog
 
 func (s *VideoSearcher) searchYouTube(ctx context.Context, b *blogger.Blogger) ([]*blogger.Video, error) {
 	var (
-		maxResultsShorts = 10
-		days             = 40
+		maxResultsShorts = s.client.cfg.Limits.YouTubeLimits.MaxVideos
+		days             = s.client.cfg.Limits.YouTubeLimits.Days
 	)
 
 	log := logger.FromContext(ctx)
@@ -95,9 +95,9 @@ func (s *VideoSearcher) searchYouTube(ctx context.Context, b *blogger.Blogger) (
 
 func (s *VideoSearcher) searchTikTok(ctx context.Context, b *blogger.Blogger) ([]*blogger.Video, error) {
 	var (
-		maxItems       = 5
-		resultsPerPage = 5
-		days           = 30
+		maxItems       = s.client.cfg.Limits.TikTokLimits.MaxVideos
+		resultsPerPage = s.client.cfg.Limits.TikTokLimits.MaxVideos
+		days           = s.client.cfg.Limits.TikTokLimits.Days
 	)
 
 	log := logger.FromContext(ctx)
@@ -126,8 +126,8 @@ func (s *VideoSearcher) searchTikTok(ctx context.Context, b *blogger.Blogger) ([
 
 func (s *VideoSearcher) searchInstagram(ctx context.Context, b *blogger.Blogger) ([]*blogger.Video, error) {
 	var (
-		maxResults = 10
-		days       = 30
+		maxResults = s.client.cfg.Limits.InstagramLimits.MaxVideos
+		days       = s.client.cfg.Limits.InstagramLimits.Days
 	)
 
 	log := logger.FromContext(ctx)

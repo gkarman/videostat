@@ -74,3 +74,6 @@ func (r *InMemoryRepo) ListVideosByBlogger(_ context.Context, bloggerID string) 
 	}
 	return res, nil
 }
+func (r *InMemoryRepo) List(ctx context.Context) ([]*blogger.Blogger, error) {
+	return nil, nil
+}
