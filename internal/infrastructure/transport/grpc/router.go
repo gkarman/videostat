@@ -3,26 +3,22 @@ package grpc
 import (
 	"log/slog"
 
-	carv1 "github.com/gkarman/demo/api/gen/go/car/v1"
-	"github.com/gkarman/demo/internal/application/car/service"
+	api_v1 "github.com/gkarman/demo/api/gen/go/v1"
+	"github.com/gkarman/demo/internal/application/blogger/query"
 	"github.com/gkarman/demo/internal/infrastructure/dispatcher"
-	carrepository "github.com/gkarman/demo/internal/infrastructure/repository/car"
-	carhandler "github.com/gkarman/demo/internal/infrastructure/transport/grpc/handler/car"
+	"github.com/gkarman/demo/internal/infrastructure/repository/blogger"
+	"github.com/gkarman/demo/internal/infrastructure/transport/grpc/handler/api"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 func RegisterServices(server *Server, log *slog.Logger, db *pgxpool.Pool, d *dispatcher.Dispatcher) {
-	registerCarService(server, log, db, d)
+	registerBloggerService(server, log, db, d)
 }
 
-func registerCarService(server *Server, log *slog.Logger, db *pgxpool.Pool, d *dispatcher.Dispatcher) {
-	repo := carrepository.NewPostgresRepo(db)
-	getSvc := service.NewGet(repo)
-	listSvc := service.NewList(repo)
-	createSvc := service.NewCreate(repo, d)
-	updateSvc := service.NewUpdate(repo)
-	deleteSvc := service.NewDelete(repo)
+func registerBloggerService(server *Server, log *slog.Logger, db *pgxpool.Pool, _ *dispatcher.Dispatcher) {
+	queryRepo := blogger.NewQueryPostgres(db)
+	listBloggersQuery := query.NewListBloggers(queryRepo)
 
-	handler := carhandler.New(log, getSvc, listSvc, createSvc, updateSvc, deleteSvc)
-	carv1.RegisterCarServer(server.Registrar(), handler)
+	handler := api.NewHandler(log, listBloggersQuery)
+	api_v1.RegisterAPIServer(server.Registrar(), handler)
 }

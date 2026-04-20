@@ -1,5 +1,0 @@
-CREATE TABLE IF NOT EXISTS cars
-(
-    id UUID PRIMARY KEY,
-    name TEXT NOT NULL
-);

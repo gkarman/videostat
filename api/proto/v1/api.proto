@@ -1,0 +1,22 @@
+syntax = "proto3";
+
+package api.v1;
+
+option go_package = "github.com/gkarman/demo/api/gen/go/v1;api";
+
+service API {
+  rpc GetBloggerList(GetBloggerListRequest) returns (GetBloggerListResponse) {}
+}
+
+message GetBloggerListRequest {
+}
+
+message GetBloggerListResponse {
+  repeated BloggerInfo bloggers = 1;
+}
+
+message BloggerInfo {
+  string id = 1;
+  string planform = 2;
+  string url = 3;
+}
