@@ -164,7 +164,7 @@ func (s *VideoSearcher) youtubeToVideos(b *blogger.Blogger, items []youtubeVideo
 		if it.PublishedAt.Before(minDate) {
 			continue
 		}
-		result = append(result, &blogger.Video{
+		dto := blogger.CreateVideoDto{
 			ID:          uuid.NewString(),
 			BloggerID:   b.ID,
 			ExternalID:  it.VideoID,
@@ -174,17 +174,21 @@ func (s *VideoSearcher) youtubeToVideos(b *blogger.Blogger, items []youtubeVideo
 			Likes:       it.Likes,
 			Comments:    it.Comments,
 			PublishedAt: it.PublishedAt,
-			CreatedAt:   now,
-		})
+		}
+		result = append(result, blogger.NewVideo(dto))
 	}
 	return result
 }
 
 func (s *VideoSearcher) tiktokToVideos(b *blogger.Blogger, items []tiktokVideo, days int) []*blogger.Video {
 	var result []*blogger.Video
-
+	now := time.Now()
+	minDate := now.AddDate(0, 0, -days)
 	for _, it := range items {
-		result = append(result, &blogger.Video{
+		if it.PublishedAt.Before(minDate) {
+			continue
+		}
+		dto := blogger.CreateVideoDto{
 			ID:          uuid.NewString(),
 			BloggerID:   b.ID,
 			ExternalID:  it.ID,
@@ -194,8 +198,9 @@ func (s *VideoSearcher) tiktokToVideos(b *blogger.Blogger, items []tiktokVideo, 
 			Likes:       it.Likes,
 			Comments:    it.Comments,
 			PublishedAt: it.PublishedAt,
-			CreatedAt:   time.Now(),
-		})
+		}
+
+		result = append(result, blogger.NewVideo(dto))
 	}
 
 	return result
@@ -209,7 +214,7 @@ func (s *VideoSearcher) instaToVideos(b *blogger.Blogger, items []instaVideo, da
 		if it.PublishedAt.Before(minDate) {
 			continue
 		}
-		result = append(result, &blogger.Video{
+		dto := blogger.CreateVideoDto{
 			ID:          uuid.NewString(),
 			BloggerID:   b.ID,
 			ExternalID:  it.ID,
@@ -219,8 +224,9 @@ func (s *VideoSearcher) instaToVideos(b *blogger.Blogger, items []instaVideo, da
 			Likes:       it.Likes,
 			Comments:    it.Comments,
 			PublishedAt: it.PublishedAt,
-			CreatedAt:   now,
-		})
+		}
+
+		result = append(result, blogger.NewVideo(dto))
 	}
 	return result
 }

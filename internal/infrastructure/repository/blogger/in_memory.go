@@ -16,8 +16,8 @@ type InMemoryRepo struct {
 
 func NewInMemory() *InMemoryRepo {
 	return &InMemoryRepo{
-		bloggers: make(map[string]*blogger.Blogger),
-		videos:   make(map[string]*blogger.Video),
+		bloggers:        make(map[string]*blogger.Blogger),
+		videos:          make(map[string]*blogger.Video),
 		SaveVideoErrFor: make(map[string]error),
 	}
 }
@@ -76,4 +76,27 @@ func (r *InMemoryRepo) ListVideosByBlogger(_ context.Context, bloggerID string) 
 }
 func (r *InMemoryRepo) List(ctx context.Context) ([]*blogger.Blogger, error) {
 	return nil, nil
+}
+
+func (r *InMemoryRepo) UpdateStatus(
+	_ context.Context,
+	videoID string,
+	from blogger.VideoStatus,
+	to blogger.VideoStatus,
+) error {
+
+	r.mu.Lock()
+	defer r.mu.Unlock()
+
+	v, ok := r.videos[videoID]
+	if !ok {
+		return blogger.ErrVideoNotFound
+	}
+	
+	if v.Status != from {
+		return blogger.ErrConcurrentUpdate
+	}
+
+	v.Status = to
+	return nil
 }

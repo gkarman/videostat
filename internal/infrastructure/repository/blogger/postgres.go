@@ -76,8 +76,20 @@ func (r *PostgresRepo) GetById(ctx context.Context, id string) (*blogger.Blogger
 func (r *PostgresRepo) SaveVideo(ctx context.Context, v *blogger.Video) error {
 	const q = `
 		INSERT INTO videos 
-		(id, blogger_id, external_id, url, title, views, likes, comments, published_at, created_at)
-		VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)
+		(id, blogger_id, external_id, url, title, views, likes, comments, published_at, created_at, status)
+		VALUES (
+			$1,
+			$2,
+			$3,
+			$4,
+			$5,
+			$6,
+			$7,
+			$8,
+			$9,
+			$10,
+		    $11   
+		)
 		ON CONFLICT (blogger_id, external_id)
 		DO UPDATE SET
 			url          = EXCLUDED.url,
@@ -99,6 +111,7 @@ func (r *PostgresRepo) SaveVideo(ctx context.Context, v *blogger.Video) error {
 		v.Comments,
 		v.PublishedAt,
 		v.CreatedAt,
+		v.Status,
 	)
 	if err != nil {
 		return fmt.Errorf("save video: %w", err)
@@ -157,4 +170,25 @@ func (r *PostgresRepo) ListVideosByBlogger(ctx context.Context, bloggerID string
 
 func (r *PostgresRepo) List(ctx context.Context) ([]*blogger.Blogger, error) {
 	return nil, nil
+}
+
+func (r *PostgresRepo) UpdateStatus(ctx context.Context, videoID string, from blogger.VideoStatus, to blogger.VideoStatus) error {
+	const q = `
+		UPDATE videos
+		SET status = $1
+		WHERE id = $2
+		AND status = $3
+	`
+
+	result, err := r.db.Exec(ctx, q, to, videoID, from)
+	if err != nil {
+		return err
+	}
+
+	rows := result.RowsAffected()
+	if rows == 0 {
+		return blogger.ErrConcurrentUpdate
+	}
+
+	return nil
 }
