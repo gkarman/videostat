@@ -84,20 +84,26 @@ func (r *InMemoryRepo) UpdateVideoStatus(
 	from blogger.VideoStatus,
 	to blogger.VideoStatus,
 ) error {
-
 	r.mu.Lock()
 	defer r.mu.Unlock()
 
-	v, ok := r.videos[videoID]
-	if !ok {
+	var targetVideo *blogger.Video
+	for _, v := range r.videos {
+		if v.ID == videoID {
+			targetVideo = v
+			break
+		}
+	}
+
+	if targetVideo == nil {
 		return blogger.ErrVideoNotFound
 	}
 
-	if v.Status != from {
+	if targetVideo.Status != from {
 		return blogger.ErrConcurrentUpdate
 	}
 
-	v.Status = to
+	targetVideo.Status = to
 	return nil
 }
 
@@ -107,7 +113,9 @@ func (r *InMemoryRepo) GetVideoByUrl(_ context.Context, url string) (*blogger.Vi
 
 	for _, v := range r.videos {
 		if v.URL == url {
-			return v, nil
+			// Возвращаем копию, чтобы изменения в памяти не меняли объект в мапе до вызова Update
+			copyVideo := *v
+			return &copyVideo, nil
 		}
 	}
 
