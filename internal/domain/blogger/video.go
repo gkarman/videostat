@@ -21,6 +21,8 @@ type Video struct {
 
 	PublishedAt time.Time
 	CreatedAt   time.Time
+
+	events []any
 }
 
 func NewVideo(dto CreateVideoDto) *Video {
@@ -39,13 +41,26 @@ func NewVideo(dto CreateVideoDto) *Video {
 	}
 }
 
+func (v *Video) StartProcessing() error {
+	err := v.ChangeStatus(VideoStatusProcessing)
+	if err != nil {
+		return err
+	}
+
+	v.addEvent(VideoProcessingStarted{
+		VideoID: v.ID,
+		At:      time.Now(),
+	})
+
+	return nil
+}
 
 func (v *Video) ChangeStatus(to VideoStatus) error {
 	if v.Status == to {
 		return nil
 	}
 
-	if !v.СanChangeStatusTo(to) {
+	if !v.canChangeStatusTo(to) {
 		return errors.New("invalid status transition")
 	}
 
@@ -53,7 +68,7 @@ func (v *Video) ChangeStatus(to VideoStatus) error {
 	return nil
 }
 
-func (v *Video) СanChangeStatusTo(to VideoStatus) bool {
+func (v *Video) canChangeStatusTo(to VideoStatus) bool {
 	switch v.Status {
 
 	case VideoStatusCreated:
@@ -71,4 +86,14 @@ func (v *Video) СanChangeStatusTo(to VideoStatus) bool {
 	default:
 		return false
 	}
+}
+
+func (v *Video) addEvent(e any) {
+	v.events = append(v.events, e)
+}
+
+func (v *Video) PullEvents() []any {
+	evs := v.events
+	v.events = nil
+	return evs
 }

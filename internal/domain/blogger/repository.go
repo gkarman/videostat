@@ -11,5 +11,6 @@ type Repo interface {
 	SaveVideo(ctx context.Context, video *Video) error
 	ListVideosByBlogger(ctx context.Context, bloggerID string) ([]*Video, error)
 	List(ctx context.Context) ([]*Blogger, error)
-	UpdateStatus(ctx context.Context, videoID string, from VideoStatus, to VideoStatus) error
+	UpdateVideoStatus(ctx context.Context, videoID string, from VideoStatus, to VideoStatus) error
+	GetVideoByUrl(ctx context.Context, url string) (*Video, error)
 }

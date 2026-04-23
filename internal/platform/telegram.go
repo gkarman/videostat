@@ -28,13 +28,15 @@ func NewTelegramBot(log *slog.Logger, cfg *config.Config, db *pgxpool.Pool, d *d
 
 
 
-	createBlogerCmd := command.NewCreateBlogger(repoBlogger, repoDictionary, d)
+	createBloggerCmd := command.NewCreateBlogger(repoBlogger, repoDictionary, d)
 	listBloggersQuery := query.NewListBloggers(repoBloggerRead)
 
 	viralEnricher := analytics.NewViralEnricher()
 	relevantEnricher := analytics.NewRelevanceEnricher()
 	enricher := analytics.NewVideoMetricsEnricher(viralEnricher, relevantEnricher)
 	listVideosQuery := query.NewListVideos(repoBloggerRead, enricher)
+
+	startProcessVideoCmd := command.NewStartProcessVideo(repoBlogger, d)
 
 	bot, err := telegram.NewBot(telegramCfg, log)
 	if err != nil {
@@ -44,9 +46,10 @@ func NewTelegramBot(log *slog.Logger, cfg *config.Config, db *pgxpool.Pool, d *d
 	router := telergam_command.NewRouter(
 		log,
 		bot,
-		createBlogerCmd,
+		createBloggerCmd,
 		listBloggersQuery,
 		listVideosQuery,
+		startProcessVideoCmd,
 	)
 
 	bot.SetHandler(router)

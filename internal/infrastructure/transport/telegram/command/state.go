@@ -5,6 +5,7 @@ import "sync"
 type userState struct {
 	PlatformName string
 	WaitingURL   bool
+	WaitingVideoURL bool
 }
 
 type State struct {

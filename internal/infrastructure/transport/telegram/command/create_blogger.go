@@ -19,22 +19,43 @@ func (r *Router) askPlatform(chatID int64) {
 
 func (r *Router) handleFSM(ctx context.Context, msg *tgbotapi.Message) bool {
 	st, ok := r.state.Get(msg.Chat.ID)
-	if !ok || !st.WaitingURL {
+	if !ok {
 		return false
 	}
 
-	resp, err := r.createBlogger.Run(ctx, reqdto.CreateBlogger{
-		URL:          msg.Text,
-		PlatformName: st.PlatformName,
-	})
-	if err != nil {
-		r.send(msg.Chat.ID, fmt.Sprintf("Ошибка: %v", err))
+	if st.WaitingVideoURL {
+		videoURL := msg.Text
+		resp, err := r.startProcessVideo.Run(ctx, reqdto.StartProcessVideo{
+			URL: videoURL,
+		})
+		if err != nil {
+			r.log.Error("telegram request failed", "err", err, "url", videoURL)
+			r.send(msg.Chat.ID, fmt.Sprintf("Ошибка: %v", err))
+			return true
+		}
+
+		r.state.Clear(msg.Chat.ID)
+		r.send(msg.Chat.ID, resp.Message)
+
 		return true
 	}
 
-	r.state.Clear(msg.Chat.ID)
-	r.send(msg.Chat.ID, fmt.Sprintf("Блогер создан ✅\nID: <code>%s</code>", resp.ID))
-	return true
+	if st.WaitingURL {
+		resp, err := r.createBlogger.Run(ctx, reqdto.CreateBlogger{
+			URL:          msg.Text,
+			PlatformName: st.PlatformName,
+		})
+		if err != nil {
+			r.send(msg.Chat.ID, fmt.Sprintf("Ошибка: %v", err))
+			return true
+		}
+
+		r.state.Clear(msg.Chat.ID)
+		r.send(msg.Chat.ID, fmt.Sprintf("Блогер создан ✅\nID: <code>%s</code>", resp.ID))
+		return true
+	}
+
+	return false
 }
 
 func (r *Router) handleCallback(ctx context.Context, q *tgbotapi.CallbackQuery) {
@@ -58,5 +79,11 @@ func (r *Router) handleCallback(ctx context.Context, q *tgbotapi.CallbackQuery) 
 
 	case q.Data == "export_videos":
 		r.exportVideos(ctx, q.Message.Chat.ID)
+
+	case q.Data == "start_process_video":
+		r.state.Set(q.Message.Chat.ID, &userState{
+			WaitingVideoURL: true,
+		})
+		r.send(q.Message.Chat.ID, "Пришли ссылку на видео")
 	}
 }

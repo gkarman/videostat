@@ -13,6 +13,7 @@ func commands() []tgbotapi.BotCommand {
 		{Command: "list_bloggers", Description: "Список блогеров"},
 		{Command: "list_videos", Description: "Список видео"},
 		{Command: "export_videos", Description: "Экспорт видео"},
+		{Command: "start_process_video", Description: "Обработать видео по ссылке"},
 	}
 }
 
@@ -34,6 +35,11 @@ func (r *Router) handleCommand(ctx context.Context, msg *tgbotapi.Message) {
 		r.listVideos(ctx, msg.Chat.ID)
 	case "export_videos":
 		r.exportVideos(ctx, msg.Chat.ID)
+	case "start_process_video":
+		r.state.Set(msg.Chat.ID, &userState{
+			WaitingVideoURL: true,
+		})
+		r.send(msg.Chat.ID, "Пришлите ссылку на видео")
 	default:
 		r.send(msg.Chat.ID, "Неизвестная команда")
 	}

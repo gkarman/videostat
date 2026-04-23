@@ -21,16 +21,16 @@ func (u *UI) PlatformKeyboard() tgbotapi.InlineKeyboardMarkup {
 func (u *UI) StartKeyboard() tgbotapi.InlineKeyboardMarkup {
 	return tgbotapi.NewInlineKeyboardMarkup(
 		tgbotapi.NewInlineKeyboardRow(
-			tgbotapi.NewInlineKeyboardButtonData("Создать блогера", "create_blogger"),
+			tgbotapi.NewInlineKeyboardButtonData("1. Добавить ссылку на блогера", "create_blogger"),
 		),
 		tgbotapi.NewInlineKeyboardRow(
-			tgbotapi.NewInlineKeyboardButtonData("Список блогеров", "list_bloggers"),
+			tgbotapi.NewInlineKeyboardButtonData("2. Список блогеров", "list_bloggers"),
 		),
 		tgbotapi.NewInlineKeyboardRow(
-			tgbotapi.NewInlineKeyboardButtonData("Список видео", "list_videos"),
+			tgbotapi.NewInlineKeyboardButtonData("3. Экспорт видео в Excel", "export_videos"),
 		),
 		tgbotapi.NewInlineKeyboardRow(
-			tgbotapi.NewInlineKeyboardButtonData("Экспорт видео в Excel", "export_videos"),
+			tgbotapi.NewInlineKeyboardButtonData("4. Анализ видео по ссылке", "start_process_video"),
 		),
 	)
 }

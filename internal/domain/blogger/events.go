@@ -7,3 +7,8 @@ type Created struct {
 	URL string
 	At  time.Time
 }
+
+type VideoProcessingStarted struct {
+	VideoID  string
+	At  time.Time
+}

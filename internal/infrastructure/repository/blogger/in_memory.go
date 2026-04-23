@@ -78,7 +78,7 @@ func (r *InMemoryRepo) List(ctx context.Context) ([]*blogger.Blogger, error) {
 	return nil, nil
 }
 
-func (r *InMemoryRepo) UpdateStatus(
+func (r *InMemoryRepo) UpdateVideoStatus(
 	_ context.Context,
 	videoID string,
 	from blogger.VideoStatus,
@@ -92,11 +92,24 @@ func (r *InMemoryRepo) UpdateStatus(
 	if !ok {
 		return blogger.ErrVideoNotFound
 	}
-	
+
 	if v.Status != from {
 		return blogger.ErrConcurrentUpdate
 	}
 
 	v.Status = to
 	return nil
+}
+
+func (r *InMemoryRepo) GetVideoByUrl(_ context.Context, url string) (*blogger.Video, error) {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+
+	for _, v := range r.videos {
+		if v.URL == url {
+			return v, nil
+		}
+	}
+
+	return nil, blogger.ErrVideoNotFound
 }
