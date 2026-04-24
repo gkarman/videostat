@@ -57,10 +57,6 @@ func (v *Video) StartProcessing() error {
 }
 
 func (v *Video) ChangeStatus(to VideoStatus) error {
-	if v.Status == to {
-		return nil
-	}
-
 	if !v.canChangeStatusTo(to) {
 		return errors.New("invalid status transition")
 	}
