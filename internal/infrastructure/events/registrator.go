@@ -11,4 +11,5 @@ import (
 
 func RegisterEventHandlers(d *dispatcher.Dispatcher, log *slog.Logger, publisher application.Publisher) {
 	d.Register(&blogger.Created{}, blogger_handlers.BloggerCreatedToRabbitHandler(publisher, log))
+	d.Register(&blogger.VideoProcessingStarted{}, blogger_handlers.VideoProcessingStartedToRabbitHandler(publisher, log))
 }

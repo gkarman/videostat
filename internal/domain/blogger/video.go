@@ -48,8 +48,9 @@ func (v *Video) StartProcessing() error {
 	}
 
 	v.addEvent(VideoProcessingStarted{
-		VideoID: v.ID,
-		At:      time.Now(),
+		VideoID:  v.ID,
+		VideoURL: v.URL,
+		At:       time.Now(),
 	})
 
 	return nil

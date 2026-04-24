@@ -19,7 +19,7 @@ func BloggerCreatedToRabbitHandler(publisher application.Publisher, log *slog.Lo
 			return
 		}
 
-		msg := mappers.MapBloggerCreated(event)
+		msg := mappers.VideoProcessingStarted(event)
 		body, err := json.Marshal(msg)
 		if err != nil {
 			log.Error("marshal failed in BloggerCreatedToRabbitHandler", "err", err)

@@ -10,5 +10,6 @@ type Created struct {
 
 type VideoProcessingStarted struct {
 	VideoID  string
-	At  time.Time
+	VideoURL string
+	At       time.Time
 }
