@@ -15,7 +15,7 @@ func VideoProcessingStartedToRabbitHandler(publisher application.Publisher, log 
 	return func(ctx context.Context, e any) {
 		event, ok := e.(*blogger.VideoProcessingStarted)
 		if !ok {
-			log.Error("invalid event type for blogger.VideoProcessingStarted (rabbit)")
+			log.Error("invalid event type for blogger.VideoProcessingStarted (rabbit)", "event", event)
 			return
 		}
 

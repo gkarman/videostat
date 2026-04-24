@@ -6,12 +6,12 @@ import (
 	"github.com/google/uuid"
 )
 
-func MapBloggerCreated(e *blogger.Created) contracts.BloggerCreatedV1 {
-	return contracts.BloggerCreatedV1{
-		EventType:  contracts.EventBloggerCreatedV1,
+func MapVideoProcessingStarted(e *blogger.VideoProcessingStarted) contracts.VideoProcessingStartedV1 {
+	return contracts.VideoProcessingStartedV1{
+		EventType:  contracts.EventVideoProcessingStartedV1,
 		EventID:    uuid.New().String(),
-		BloggerID:  e.ID,
-		BloggerURL: e.URL,
+		VideoID:    e.VideoID,
+		VideoURL:   e.VideoURL,
 		OccurredAt: e.At,
 	}
 }
