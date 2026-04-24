@@ -20,7 +20,9 @@ func NewRouterWithHandlers(log *slog.Logger, db *pgxpool.Pool, apifyClient *apif
 	cmdFVideos := command.NewFetchBloggerVideos(bRepo, vSearcher)
 
 	bloggerCreatedHandler := handlers.NewBloggerCreatedHandler(log, cmdFVideos)
+	videoProcessingStartedHandler := handlers.NewVideoProcessingStarted(log, cmdFVideos)
 
 	r.Register(events.EventBloggerCreatedV1, bloggerCreatedHandler.Handle)
+	r.Register(events.EventVideoProcessingStartedV1, videoProcessingStartedHandler.Handle)
 	return r
 }
