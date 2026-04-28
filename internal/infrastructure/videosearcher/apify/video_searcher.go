@@ -8,15 +8,16 @@ import (
 	"time"
 
 	"github.com/gkarman/demo/internal/domain/blogger"
+	sharedapify "github.com/gkarman/demo/internal/infrastructure/apify"
 	"github.com/gkarman/demo/internal/infrastructure/logger"
 	"github.com/google/uuid"
 )
 
 type VideoSearcher struct {
-	client *Client
+	client *sharedapify.Client
 }
 
-func NewVideoSearcher(client *Client) *VideoSearcher {
+func NewVideoSearcher(client *sharedapify.Client) *VideoSearcher {
 	return &VideoSearcher{client: client}
 }
 
@@ -65,8 +66,8 @@ func (s *VideoSearcher) Search(ctx context.Context, b *blogger.Blogger) ([]*blog
 
 func (s *VideoSearcher) searchYouTube(ctx context.Context, b *blogger.Blogger) ([]*blogger.Video, error) {
 	var (
-		maxResultsShorts = s.client.cfg.Limits.YouTubeLimits.MaxVideos
-		days             = s.client.cfg.Limits.YouTubeLimits.Days
+		maxResultsShorts = s.client.Limits().YouTubeLimits.MaxVideos
+		days             = s.client.Limits().YouTubeLimits.Days
 	)
 
 	log := logger.FromContext(ctx)
@@ -95,9 +96,9 @@ func (s *VideoSearcher) searchYouTube(ctx context.Context, b *blogger.Blogger) (
 
 func (s *VideoSearcher) searchTikTok(ctx context.Context, b *blogger.Blogger) ([]*blogger.Video, error) {
 	var (
-		maxItems       = s.client.cfg.Limits.TikTokLimits.MaxVideos
-		resultsPerPage = s.client.cfg.Limits.TikTokLimits.MaxVideos
-		days           = s.client.cfg.Limits.TikTokLimits.Days
+		maxItems       = s.client.Limits().TikTokLimits.MaxVideos
+		resultsPerPage = s.client.Limits().TikTokLimits.MaxVideos
+		days           = s.client.Limits().TikTokLimits.Days
 	)
 
 	log := logger.FromContext(ctx)
@@ -126,8 +127,8 @@ func (s *VideoSearcher) searchTikTok(ctx context.Context, b *blogger.Blogger) ([
 
 func (s *VideoSearcher) searchInstagram(ctx context.Context, b *blogger.Blogger) ([]*blogger.Video, error) {
 	var (
-		maxResults = s.client.cfg.Limits.InstagramLimits.MaxVideos
-		days       = s.client.cfg.Limits.InstagramLimits.Days
+		maxResults = s.client.Limits().InstagramLimits.MaxVideos
+		days       = s.client.Limits().InstagramLimits.Days
 	)
 
 	log := logger.FromContext(ctx)

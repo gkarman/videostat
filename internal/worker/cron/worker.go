@@ -7,20 +7,21 @@ import (
 
 	"github.com/gkarman/demo/internal/application/blogger/command"
 	"github.com/gkarman/demo/internal/infrastructure/repository/blogger"
-	"github.com/gkarman/demo/internal/infrastructure/videosearcher/apify"
+	sharedapify "github.com/gkarman/demo/internal/infrastructure/apify"
+	apifysearcher "github.com/gkarman/demo/internal/infrastructure/videosearcher/apify"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/robfig/cron/v3"
 )
 
 type Worker struct {
-	log  *slog.Logger
-	db   *pgxpool.Pool
-	cron *cron.Cron
-	ctx  context.Context
-	apifyClient *apify.Client
+	log         *slog.Logger
+	db          *pgxpool.Pool
+	cron        *cron.Cron
+	ctx         context.Context
+	apifyClient *sharedapify.Client
 }
 
-func New(log *slog.Logger, db *pgxpool.Pool, apifyClient *apify.Client) (*Worker, error) {
+func New(log *slog.Logger, db *pgxpool.Pool, apifyClient *sharedapify.Client) (*Worker, error) {
 	c := cron.New(
 		cron.WithLocation(time.Local),
 		cron.WithChain(
@@ -58,7 +59,7 @@ func (w *Worker) registerJobs() error {
 
 func (w *Worker) refreshAllBloggers() {
 	bloggerRepo := blogger.NewPostgres(w.db)
-	videoSearcher := apify.NewVideoSearcher(w.apifyClient)
+	videoSearcher := apifysearcher.NewVideoSearcher(w.apifyClient)
 	fetchVideoCmd := command.NewFetchBloggerVideos(bloggerRepo, videoSearcher)
 
 	refreshCmd := command.NewRefreshAllBloggers(

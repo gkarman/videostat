@@ -7,6 +7,7 @@ import (
 	"github.com/gkarman/demo/internal/infrastructure/contracts/events"
 	"github.com/gkarman/demo/internal/infrastructure/dispatcher"
 	"github.com/gkarman/demo/internal/infrastructure/repository/blogger"
+	sharedapify "github.com/gkarman/demo/internal/infrastructure/apify"
 	apifysearcher "github.com/gkarman/demo/internal/infrastructure/videosearcher/apify"
 	apifysource "github.com/gkarman/demo/internal/infrastructure/videosourcesearcher/apify"
 	"github.com/gkarman/demo/internal/worker"
@@ -14,7 +15,7 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
-func NewRouterWithHandlers(log *slog.Logger, db *pgxpool.Pool, apifyClient *apifysearcher.Client) *worker.Router {
+func NewRouterWithHandlers(log *slog.Logger, db *pgxpool.Pool, apifyClient *sharedapify.Client) *worker.Router {
 	r := worker.NewRouter(log)
 
 	bRepo := blogger.NewPostgres(db)

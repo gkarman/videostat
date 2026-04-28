@@ -2,7 +2,7 @@ package platform
 
 import (
 	"github.com/gkarman/demo/internal/config"
-	"github.com/gkarman/demo/internal/infrastructure/videosearcher/apify"
+	"github.com/gkarman/demo/internal/infrastructure/apify"
 )
 
 func NewApifyClient(cfg *config.Config) *apify.Client {

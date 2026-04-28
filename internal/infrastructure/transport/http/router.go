@@ -9,12 +9,13 @@ import (
 	"github.com/gkarman/demo/internal/infrastructure/transport/http/handler"
 	blogger_handler "github.com/gkarman/demo/internal/infrastructure/transport/http/handler/blogger"
 	middleware2 "github.com/gkarman/demo/internal/infrastructure/transport/http/middleware"
-	"github.com/gkarman/demo/internal/infrastructure/videosearcher/apify"
+	sharedapify "github.com/gkarman/demo/internal/infrastructure/apify"
+	videoapify "github.com/gkarman/demo/internal/infrastructure/videosearcher/apify"
 	"github.com/go-chi/chi/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
-func NewRouter(log *slog.Logger, db *pgxpool.Pool, d *dispatcher.Dispatcher, apify *apify.Client) *chi.Mux {
+func NewRouter(log *slog.Logger, db *pgxpool.Pool, d *dispatcher.Dispatcher, apify *sharedapify.Client) *chi.Mux {
 	r := chi.NewRouter()
 	r.Use(middleware2.Logger(log))
 	r.Use(middleware2.Recovery())
@@ -28,11 +29,9 @@ func registerHomeRoutes(r *chi.Mux) {
 	r.Get("/", homeHandler.Home)
 }
 
-
-func registerVideoRoutes(r *chi.Mux, db *pgxpool.Pool, _ *dispatcher.Dispatcher, a *apify.Client) {
-
+func registerVideoRoutes(r *chi.Mux, db *pgxpool.Pool, _ *dispatcher.Dispatcher, a *sharedapify.Client) {
 	repoBlogger := blogger_repo.NewPostgres(db)
-	videoSearcher := apify.NewVideoSearcher(a)
+	videoSearcher := videoapify.NewVideoSearcher(a)
 	fetchVideoCmd := blogger_cmd.NewFetchBloggerVideos(repoBlogger, videoSearcher)
 	fetchVideoHandler := blogger_handler.NewGetCarHandler(fetchVideoCmd)
 

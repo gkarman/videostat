@@ -7,7 +7,7 @@ import (
 	"github.com/gkarman/demo/internal/config"
 	"github.com/gkarman/demo/internal/infrastructure/dispatcher"
 	"github.com/gkarman/demo/internal/infrastructure/transport/http"
-	"github.com/gkarman/demo/internal/infrastructure/videosearcher/apify"
+	"github.com/gkarman/demo/internal/infrastructure/apify"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 

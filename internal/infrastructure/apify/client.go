@@ -21,6 +21,10 @@ func NewClient(cfg Config) *Client {
 	}
 }
 
+func (c *Client) Limits() Limits {
+	return c.cfg.Limits
+}
+
 func (c *Client) RunActorSync(ctx context.Context, actor string, input any) ([]byte, error) {
 	url := fmt.Sprintf(
 		"%s/acts/%s/run-sync-get-dataset-items",

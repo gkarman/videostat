@@ -8,8 +8,8 @@ import (
 	"strings"
 
 	"github.com/gkarman/demo/internal/domain/blogger"
+	apifyclient "github.com/gkarman/demo/internal/infrastructure/apify"
 	"github.com/gkarman/demo/internal/infrastructure/logger"
-	apifyclient "github.com/gkarman/demo/internal/infrastructure/videosearcher/apify"
 )
 
 type VideoSourceSearcher struct {
