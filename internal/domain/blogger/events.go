@@ -20,6 +20,11 @@ type VideoSourceFound struct {
 	At      time.Time
 }
 
+type VideoAnalyzeDone struct {
+	VideoID string
+	At      time.Time
+}
+
 type VideoProcessingFailed struct {
 	VideoID      string
 	Stage        VideoErrorStage
