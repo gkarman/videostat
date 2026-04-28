@@ -6,15 +6,16 @@ import (
 	"log/slog"
 
 	"github.com/gkarman/demo/internal/application/blogger/command"
+	"github.com/gkarman/demo/internal/application/blogger/command/reqdto"
 	"github.com/gkarman/demo/internal/infrastructure/contracts/events"
 	"github.com/gkarman/demo/internal/infrastructure/logger"
 )
 
 type VideoProcessingStartedHandler struct {
-	command *command.FetchBloggerVideos
+	command *command.FetchVideoSources
 }
 
-func NewVideoProcessingStarted(log *slog.Logger, command *command.FetchBloggerVideos) *VideoProcessingStartedHandler {
+func NewVideoProcessingStarted(log *slog.Logger, command *command.FetchVideoSources) *VideoProcessingStartedHandler {
 	return &VideoProcessingStartedHandler{
 		command: command,
 	}
@@ -31,15 +32,15 @@ func (h *VideoProcessingStartedHandler) Handle(ctx context.Context, body []byte)
 		return err
 	}
 
-	//req := reqdto.FetchBloggerVideos{
-	//	BloggerID: evt.BloggerID,
-	//}
-	//log.Debug("BloggerCreated handler", "req", req)
+	req := reqdto.FetchVideoSources{
+		VideoID:  evt.VideoID,
+		VideoURL: evt.VideoURL,
+	}
 
-	//err := h.command.Execute(ctx, req)
-	//if err != nil {
-	//	log.Error("command error", "error", err)
-	//}
+	err := h.command.Execute(ctx, req)
+	if err != nil {
+		log.Error("command error", "error", err)
+	}
 
 	return nil
 }

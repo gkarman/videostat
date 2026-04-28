@@ -51,6 +51,7 @@ func (c *FetchVideoSources) Execute(ctx context.Context, req reqdto.FetchVideoSo
 
 		return fmt.Errorf("search url: %w", err)
 	}
+	log.Debug("find url", "url", fileUrl)
 
 	v.SourceFound(fileUrl)
 	c.disp.Dispatch(ctx, v.PullEvents())
