@@ -42,7 +42,7 @@ func (c *CreateBlogger) Run(ctx context.Context, req reqdto.CreateBlogger) (resp
 
 	platform, err := c.repoDictionary.GetPlatformByName(ctx, req.PlatformName)
 	if err != nil {
-		log.Error("get platform by name failed", "err", err)
+		log.Debug("get platform by name failed", "err", err)
 		return respdto.CreateBlogger{}, fmt.Errorf("get platform by name: %w", err)
 	}
 	if platform == nil {
@@ -52,11 +52,11 @@ func (c *CreateBlogger) Run(ctx context.Context, req reqdto.CreateBlogger) (resp
 
 	exist, err := c.repoBlogger.ExistByUrl(ctx, req.URL)
 	if err != nil {
-		log.Error("exist by url failed", "err", err)
+		log.Debug("exist by url failed", "err", err)
 		return respdto.CreateBlogger{}, fmt.Errorf("exist by url: %w", err)
 	}
 	if exist {
-		log.Warn("url already exists")
+		log.Debug("url already exists")
 		return respdto.CreateBlogger{}, blogger.ErrUrlExist
 	}
 
@@ -66,18 +66,18 @@ func (c *CreateBlogger) Run(ctx context.Context, req reqdto.CreateBlogger) (resp
 		URL:        req.URL,
 	})
 	if err != nil {
-		log.Error("create blogger failed", "err", err)
+		log.Debug("create blogger failed", "err", err)
 		return respdto.CreateBlogger{}, fmt.Errorf("create blogger: %w", err)
 	}
 
 	if err := c.repoBlogger.Save(ctx, b); err != nil {
-		log.Error("save blogger failed", "blogger_id", b.ID, "err", err)
+		log.Debug("save blogger failed", "blogger_id", b.ID, "err", err)
 		return respdto.CreateBlogger{}, fmt.Errorf("save blogger: %w", err)
 	}
 
 	c.disp.Dispatch(ctx, b.PullEvents())
 
-	log.Info("success", "blogger_id", b.ID)
+	log.Debug("success", "blogger_id", b.ID)
 
 	return respdto.CreateBlogger{ID: b.ID}, nil
 }

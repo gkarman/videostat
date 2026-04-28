@@ -196,29 +196,80 @@ func (r *PostgresRepo) UpdateVideoStatus(ctx context.Context, videoID string, fr
 func (r *PostgresRepo) GetVideoByUrl(ctx context.Context, url string) (*blogger.Video, error) {
 	const q = `
 		SELECT
-			id,
-			blogger_id,
-			external_id,
-			url,
-			title,
-			views,
-			likes,
-			comments,
-			status,
-			error_stage,
-			error_message,
-			published_at,
-			created_at
+			id, blogger_id, external_id, url, title,
+			views, likes, comments,
+			status, error_stage, error_message,
+			published_at, created_at
 		FROM videos
 		WHERE url = $1
 		LIMIT 1
 	`
 
+	v, err := scanVideo(r.db.QueryRow(ctx, q, url))
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return nil, blogger.ErrVideoNotFound
+		}
+		return nil, fmt.Errorf("get video by url: %w", err)
+	}
+
+	return v, nil
+}
+
+func (r *PostgresRepo) GetVideoByID(ctx context.Context, id string) (*blogger.Video, error) {
+	const q = `
+		SELECT
+			id, blogger_id, external_id, url, title,
+			views, likes, comments,
+			status, error_stage, error_message,
+			published_at, created_at
+		FROM videos
+		WHERE id = $1
+		LIMIT 1
+	`
+
+	v, err := scanVideo(r.db.QueryRow(ctx, q, id))
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return nil, blogger.ErrVideoNotFound
+		}
+		return nil, fmt.Errorf("get video by id: %w", err)
+	}
+
+	return v, nil
+}
+
+func (r *PostgresRepo) UpdateVideoState(ctx context.Context, v *blogger.Video) error {
+	const q = `
+		UPDATE videos
+		SET
+			status        = $1,
+			error_stage   = $2,
+			error_message = $3
+		WHERE id = $4
+	`
+
+	_, err := r.db.Exec(
+		ctx,
+		q,
+		v.Status,
+		v.ErrorStage,
+		v.ErrorMessage,
+		v.ID,
+	)
+	if err != nil {
+		return fmt.Errorf("update video state: %w", err)
+	}
+
+	return nil
+}
+
+func scanVideo(row pgx.Row) (*blogger.Video, error) {
 	var v blogger.Video
 	var errorStage *string
 	var errorMessage *string
 
-	err := r.db.QueryRow(ctx, q, url).Scan(
+	err := row.Scan(
 		&v.ID,
 		&v.BloggerID,
 		&v.ExternalID,
@@ -234,10 +285,7 @@ func (r *PostgresRepo) GetVideoByUrl(ctx context.Context, url string) (*blogger.
 		&v.CreatedAt,
 	)
 	if err != nil {
-		if errors.Is(err, pgx.ErrNoRows) {
-			return nil, blogger.ErrVideoNotFound
-		}
-		return nil, fmt.Errorf("get video by url: %w", err)
+		return nil, err
 	}
 
 	if errorStage != nil {

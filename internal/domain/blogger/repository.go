@@ -13,4 +13,6 @@ type Repo interface {
 	List(ctx context.Context) ([]*Blogger, error)
 	UpdateVideoStatus(ctx context.Context, videoID string, from VideoStatus, to VideoStatus) error
 	GetVideoByUrl(ctx context.Context, url string) (*Video, error)
+	GetVideoByID(ctx context.Context, id string) (*Video, error)
+	UpdateVideoState(ctx context.Context, v *Video) error
 }

@@ -113,11 +113,39 @@ func (r *InMemoryRepo) GetVideoByUrl(_ context.Context, url string) (*blogger.Vi
 
 	for _, v := range r.videos {
 		if v.URL == url {
-			// Возвращаем копию, чтобы изменения в памяти не меняли объект в мапе до вызова Update
 			copyVideo := *v
 			return &copyVideo, nil
 		}
 	}
 
 	return nil, blogger.ErrVideoNotFound
+}
+
+func (r *InMemoryRepo) GetVideoByID(_ context.Context, id string) (*blogger.Video, error) {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+
+	for _, v := range r.videos {
+		if v.ID == id {
+			copyVideo := *v
+			return &copyVideo, nil
+		}
+	}
+
+	return nil, blogger.ErrVideoNotFound
+}
+
+func (r *InMemoryRepo) UpdateVideoState(_ context.Context, v *blogger.Video) error {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+
+	for extID, stored := range r.videos {
+		if stored.ID == v.ID {
+			copyVideo := *v
+			r.videos[extID] = &copyVideo
+			return nil
+		}
+	}
+
+	return blogger.ErrVideoNotFound
 }

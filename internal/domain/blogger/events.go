@@ -13,3 +13,16 @@ type VideoProcessingStarted struct {
 	VideoURL string
 	At       time.Time
 }
+
+type VideoSourceFound struct {
+	VideoID string
+	FileURL string
+	At      time.Time
+}
+
+type VideoProcessingFailed struct {
+	VideoID      string
+	Stage        VideoErrorStage
+	ErrorMessage string
+	At           time.Time
+}

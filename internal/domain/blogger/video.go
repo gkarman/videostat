@@ -41,7 +41,7 @@ func NewVideo(dto CreateVideoDto) *Video {
 	}
 }
 
-func (v *Video) StartProcessing() error {
+func (v *Video) MarkStartProcessing() error {
 	err := v.ChangeStatus(VideoStatusProcessing)
 	if err != nil {
 		return err
@@ -54,6 +54,32 @@ func (v *Video) StartProcessing() error {
 	})
 
 	return nil
+}
+
+func (v *Video) MarkFailProcessing(stage VideoErrorStage, err error) error {
+	if err := v.ChangeStatus(VideoStatusFailed); err != nil {
+		return err
+	}
+	v.ErrorStage = &stage
+	msg := err.Error()
+	v.ErrorMessage = &msg
+
+	v.addEvent(&VideoProcessingFailed{
+		VideoID:      v.ID,
+		Stage:        stage,
+		ErrorMessage: msg,
+		At:           time.Now(),
+	})
+
+	return nil
+}
+
+func (v *Video) SourceFound(fileURL string) {
+	v.addEvent(&VideoSourceFound{
+		VideoID: v.ID,
+		FileURL: fileURL,
+		At:      time.Now(),
+	})
 }
 
 func (v *Video) ChangeStatus(to VideoStatus) error {
