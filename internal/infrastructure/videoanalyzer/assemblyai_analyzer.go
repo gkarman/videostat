@@ -23,6 +23,10 @@ func NewAssemblyAIAnalyzer(apiKey string) *AssemblyAIAnalyzer {
 	}
 }
 
+func (a *AssemblyAIAnalyzer) ProviderName() string {
+	return "assemblyai"
+}
+
 func (a *AssemblyAIAnalyzer) Analyze(ctx context.Context, videoURL string) ([]byte, error) {
 	id, err := a.submit(ctx, videoURL)
 	if err != nil {

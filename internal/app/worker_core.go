@@ -39,8 +39,17 @@ func NewWorkerCore(ctx context.Context) (*core.Worker, error) {
 
 	log.Info("rabbit consumer connected")
 
+	log.Info("rabbit publisher connect...")
+	publisher, err := platform.NewRabbitPublisher(cfg)
+	if err != nil {
+		db.Close()
+		return nil, fmt.Errorf("init rabbit publisher: %w", err)
+	}
+	log.Info("rabbit publisher connected")
+
 	apifyClient := platform.NewApifyClient(cfg)
-	router := core.NewRouterWithHandlers(log, db, apifyClient)
+	analyzer := platform.NewAssemblyAIAnalyzer(cfg)
+	router := core.NewRouterWithHandlers(log, db, apifyClient, analyzer, publisher)
 	worker := core.New(log, consumer, router)
 
 	return worker, nil

@@ -12,6 +12,7 @@ type Config struct {
 	Mail        MailConfig
 	TelegramBot TelegramBotConfig
 	Apify       ApifyConfig
+	Assemblyai  AssemblyaiConfig
 }
 
 type DBConfig struct {

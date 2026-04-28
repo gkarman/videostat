@@ -264,6 +264,18 @@ func (r *PostgresRepo) UpdateVideoState(ctx context.Context, v *blogger.Video) e
 	return nil
 }
 
+func (r *PostgresRepo) SaveVideoAnalysis(ctx context.Context, va *blogger.VideoAnalysis) error {
+	const q = `
+		INSERT INTO video_analysis (id, video_id, provider, raw_payload, created_at)
+		VALUES ($1, $2, $3, $4, $5)
+	`
+	_, err := r.db.Exec(ctx, q, va.ID, va.VideoID, va.Provider, va.RawPayload, va.CreatedAt)
+	if err != nil {
+		return fmt.Errorf("save video analysis: %w", err)
+	}
+	return nil
+}
+
 func scanVideo(row pgx.Row) (*blogger.Video, error) {
 	var v blogger.Video
 	var errorStage *string

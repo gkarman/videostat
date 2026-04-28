@@ -8,10 +8,12 @@ import (
 )
 
 type InMemoryRepo struct {
-	mu              sync.Mutex
-	bloggers        map[string]*blogger.Blogger // key = url
-	videos          map[string]*blogger.Video
-	SaveVideoErrFor map[string]error // externalID -> error
+	mu                   sync.Mutex
+	bloggers             map[string]*blogger.Blogger // key = url
+	videos               map[string]*blogger.Video
+	analyses             []*blogger.VideoAnalysis
+	SaveVideoErrFor      map[string]error // externalID -> error
+	SaveVideoAnalysisErr error
 }
 
 func NewInMemory() *InMemoryRepo {
@@ -148,4 +150,20 @@ func (r *InMemoryRepo) UpdateVideoState(_ context.Context, v *blogger.Video) err
 	}
 
 	return blogger.ErrVideoNotFound
+}
+
+func (r *InMemoryRepo) SaveVideoAnalysis(_ context.Context, va *blogger.VideoAnalysis) error {
+	if r.SaveVideoAnalysisErr != nil {
+		return r.SaveVideoAnalysisErr
+	}
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	r.analyses = append(r.analyses, va)
+	return nil
+}
+
+func (r *InMemoryRepo) GetSavedAnalyses() []*blogger.VideoAnalysis {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	return r.analyses
 }

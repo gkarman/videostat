@@ -82,6 +82,13 @@ func (v *Video) SourceFound(fileURL string) {
 	})
 }
 
+func (v *Video) AnalyzeDone() {
+	v.addEvent(&VideoAnalyzeDone{
+		VideoID: v.ID,
+		At:      time.Now(),
+	})
+}
+
 func (v *Video) ChangeStatus(to VideoStatus) error {
 	if !v.canChangeStatusTo(to) {
 		return errors.New("invalid status transition")

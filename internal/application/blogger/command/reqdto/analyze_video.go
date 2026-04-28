@@ -1,5 +1,6 @@
 package reqdto
 
 type AnalyzeVideo struct {
-	VideoId string
+	VideoID string
+	FileURL string
 }
