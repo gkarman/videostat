@@ -276,6 +276,37 @@ func (r *PostgresRepo) SaveVideoAnalysis(ctx context.Context, va *blogger.VideoA
 	return nil
 }
 
+func (r *PostgresRepo) GetVideoAnalysisByVideoID(ctx context.Context, videoID string) (*blogger.VideoAnalysis, error) {
+	const q = `
+		SELECT id, video_id, provider, raw_payload, created_at
+		FROM video_analysis
+		WHERE video_id = $1
+		ORDER BY created_at DESC
+		LIMIT 1
+	`
+	var va blogger.VideoAnalysis
+	err := r.db.QueryRow(ctx, q, videoID).Scan(&va.ID, &va.VideoID, &va.Provider, &va.RawPayload, &va.CreatedAt)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return nil, blogger.ErrVideoNotFound
+		}
+		return nil, fmt.Errorf("get video analysis by video id: %w", err)
+	}
+	return &va, nil
+}
+
+func (r *PostgresRepo) SaveVideoPrompt(ctx context.Context, vp *blogger.VideoPrompt) error {
+	const q = `
+		INSERT INTO video_prompts (id, video_id, llm_provider, llm_model, prompt, created_at)
+		VALUES ($1, $2, $3, $4, $5, $6)
+	`
+	_, err := r.db.Exec(ctx, q, vp.ID, vp.VideoID, vp.LLMProvider, vp.LLMModel, vp.Prompt, vp.CreatedAt)
+	if err != nil {
+		return fmt.Errorf("save video prompt: %w", err)
+	}
+	return nil
+}
+
 func scanVideo(row pgx.Row) (*blogger.Video, error) {
 	var v blogger.Video
 	var errorStage *string

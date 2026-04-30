@@ -16,4 +16,6 @@ type Repo interface {
 	GetVideoByID(ctx context.Context, id string) (*Video, error)
 	UpdateVideoState(ctx context.Context, v *Video) error
 	SaveVideoAnalysis(ctx context.Context, va *VideoAnalysis) error
+	GetVideoAnalysisByVideoID(ctx context.Context, videoID string) (*VideoAnalysis, error)
+	SaveVideoPrompt(ctx context.Context, vp *VideoPrompt) error
 }

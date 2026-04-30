@@ -49,7 +49,8 @@ func NewWorkerCore(ctx context.Context) (*core.Worker, error) {
 
 	apifyClient := platform.NewApifyClient(cfg)
 	analyzer := platform.NewAssemblyAIAnalyzer(cfg)
-	router := core.NewRouterWithHandlers(log, db, apifyClient, analyzer, publisher)
+	promptGenerator := platform.NewClaudePromptGenerator(cfg)
+	router := core.NewRouterWithHandlers(log, db, apifyClient, analyzer, promptGenerator, publisher)
 	worker := core.New(log, consumer, router)
 
 	return worker, nil

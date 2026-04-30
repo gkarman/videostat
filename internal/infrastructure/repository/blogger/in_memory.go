@@ -12,6 +12,7 @@ type InMemoryRepo struct {
 	bloggers             map[string]*blogger.Blogger // key = url
 	videos               map[string]*blogger.Video
 	analyses             []*blogger.VideoAnalysis
+	prompts              []*blogger.VideoPrompt
 	SaveVideoErrFor      map[string]error // externalID -> error
 	SaveVideoAnalysisErr error
 }
@@ -166,4 +167,22 @@ func (r *InMemoryRepo) GetSavedAnalyses() []*blogger.VideoAnalysis {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 	return r.analyses
+}
+
+func (r *InMemoryRepo) GetVideoAnalysisByVideoID(_ context.Context, videoID string) (*blogger.VideoAnalysis, error) {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	for _, va := range r.analyses {
+		if va.VideoID == videoID {
+			return va, nil
+		}
+	}
+	return nil, blogger.ErrVideoNotFound
+}
+
+func (r *InMemoryRepo) SaveVideoPrompt(_ context.Context, vp *blogger.VideoPrompt) error {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	r.prompts = append(r.prompts, vp)
+	return nil
 }

@@ -46,9 +46,15 @@ func (a *AssemblyAIAnalyzer) Analyze(ctx context.Context, videoURL string) ([]by
 
 func (a *AssemblyAIAnalyzer) submit(ctx context.Context, audioURL string) (string, error) {
 	payload, err := json.Marshal(map[string]any{
-		"audio_url":       audioURL,
-		"speech_models":   []string{"universal-2"},
-		"auto_highlights": true,
+		"audio_url":          audioURL,
+		"speech_models":      []string{"universal-2"},
+		"auto_highlights":    true,
+		"auto_chapters":      true,
+		"sentiment_analysis": true,
+		"entity_detection":   true,
+		"summarization":      true,
+		"summary_model":      "informative",
+		"summary_type":       "bullets",
 	})
 	if err != nil {
 		return "", fmt.Errorf("marshal request: %w", err)

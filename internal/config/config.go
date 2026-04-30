@@ -13,6 +13,7 @@ type Config struct {
 	TelegramBot TelegramBotConfig
 	Apify       ApifyConfig
 	Assemblyai  AssemblyaiConfig
+	Anthropic   AnthropicConfig
 }
 
 type DBConfig struct {
@@ -88,4 +89,9 @@ type ApifyConfig struct {
 type AssemblyaiConfig struct {
 	Token string `env:"ASSEMBLYAI_TOKEN" env-default:""`
 	Host  string `env:"ASSEMBLYAI_HOST" env-default:""`
+}
+
+type AnthropicConfig struct {
+	Token string `env:"ANTHROPIC_TOKEN" env-default:""`
+	Model string `env:"ANTHROPIC_MODEL" env-default:"claude-sonnet-4-6"`
 }

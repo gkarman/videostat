@@ -23,6 +23,7 @@ func NewRouterWithHandlers(
 	db *pgxpool.Pool,
 	apifyClient *sharedapify.Client,
 	analyzer application.VideoAnalyzer,
+	promptGenerator application.VideoPromptGenerator,
 	publisher application.Publisher,
 ) *worker.Router {
 	r := worker.NewRouter(log)
@@ -40,13 +41,16 @@ func NewRouterWithHandlers(
 	cmdFSources := command.NewFetchVideoSources(bRepo, vSourceSearcher, disp)
 
 	cmdAnalyze := command.NewAnalyzeVideo(bRepo, analyzer, disp)
+	cmdGeneratePrompt := command.NewGenerateVideoPrompt(bRepo, promptGenerator)
 
 	bloggerCreatedHandler := handlers.NewBloggerCreatedHandler(log, cmdFVideos)
 	videoProcessingStartedHandler := handlers.NewVideoProcessingStarted(log, cmdFSources)
 	videoSourceFoundHandler := handlers.NewVideoSourceFoundHandler(log, cmdAnalyze)
+	videoAnalyzeDoneHandler := handlers.NewVideoAnalyzeDoneHandler(log, cmdGeneratePrompt)
 
 	r.Register(events.EventBloggerCreatedV1, bloggerCreatedHandler.Handle)
 	r.Register(events.EventVideoProcessingStartedV1, videoProcessingStartedHandler.Handle)
 	r.Register(events.EventVideoSourceFoundV1, videoSourceFoundHandler.Handle)
+	r.Register(events.EventVideoAnalyzeDoneV1, videoAnalyzeDoneHandler.Handle)
 	return r
 }

@@ -89,6 +89,10 @@ func (v *Video) AnalyzeDone() {
 	})
 }
 
+func (v *Video) MarkReady() error {
+	return v.ChangeStatus(VideoStatusReady)
+}
+
 func (v *Video) ChangeStatus(to VideoStatus) error {
 	if !v.canChangeStatusTo(to) {
 		return errors.New("invalid status transition")
