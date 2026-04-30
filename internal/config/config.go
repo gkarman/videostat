@@ -15,6 +15,7 @@ type Config struct {
 	Assemblyai  AssemblyaiConfig
 	Anthropic   AnthropicConfig
 	OpenRouter  OpenRouterConfig
+	OpenAI      OpenAIConfig
 	LLM         LLMConfig
 }
 
@@ -100,11 +101,16 @@ type AnthropicConfig struct {
 
 type OpenRouterConfig struct {
 	Token string `env:"OPENROUTER_TOKEN" env-default:""`
-	Model string `env:"OPENROUTER_MODEL" env-default:"google/gemma-3-27b-it:free"`
+	Model string `env:"OPENROUTER_MODEL" env-default:"meta-llama/llama-3.3-70b-instruct:free"`
+}
+
+type OpenAIConfig struct {
+	Token string `env:"OPENAI_TOKEN" env-default:""`
+	Model string `env:"OPENAI_MODEL" env-default:"gpt-4o-mini"`
 }
 
 // LLMConfig selects which LLM provider is active.
-// LLM_PROVIDER: "anthropic" | "openrouter"
+// LLM_PROVIDER: "anthropic" | "openrouter" | "openai"
 type LLMConfig struct {
 	Provider string `env:"LLM_PROVIDER" env-default:"anthropic"`
 }

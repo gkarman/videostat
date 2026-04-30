@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"time"
 
 	"github.com/gkarman/demo/internal/infrastructure/llm"
 )
@@ -53,6 +54,50 @@ func (g *PromptGenerator) Generate(ctx context.Context, rawPayload []byte) (stri
 		return "", fmt.Errorf("marshal request: %w", err)
 	}
 
+	const maxAttempts = 4
+	delay := 5 * time.Second
+
+	for attempt := range maxAttempts {
+		result, err := g.do(ctx, body)
+		if err == nil {
+			return result, nil
+		}
+		if attempt == maxAttempts-1 {
+			return "", err
+		}
+		var apiErr *apiError
+		if isRateLimit(err, &apiErr) {
+			select {
+			case <-ctx.Done():
+				return "", ctx.Err()
+			case <-time.After(delay):
+				delay *= 2
+				continue
+			}
+		}
+		return "", err
+	}
+	panic("unreachable")
+}
+
+type apiError struct {
+	status int
+	body   []byte
+}
+
+func (e *apiError) Error() string {
+	return fmt.Sprintf("openrouter api error %d: %s", e.status, e.body)
+}
+
+func isRateLimit(err error, out **apiError) bool {
+	if e, ok := err.(*apiError); ok && e.status == http.StatusTooManyRequests {
+		*out = e
+		return true
+	}
+	return false
+}
+
+func (g *PromptGenerator) do(ctx context.Context, body []byte) (string, error) {
 	req, err := http.NewRequestWithContext(ctx, http.MethodPost, baseURL, bytes.NewReader(body))
 	if err != nil {
 		return "", fmt.Errorf("create request: %w", err)
@@ -72,7 +117,7 @@ func (g *PromptGenerator) Generate(ctx context.Context, rawPayload []byte) (stri
 	}
 
 	if resp.StatusCode != http.StatusOK {
-		return "", fmt.Errorf("openrouter api error %d: %s", resp.StatusCode, respBody)
+		return "", &apiError{status: resp.StatusCode, body: respBody}
 	}
 
 	var result struct {

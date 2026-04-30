@@ -47,6 +47,9 @@ func (v *Video) MarkStartProcessing() error {
 		return err
 	}
 
+	v.ErrorStage = nil
+	v.ErrorMessage = nil
+
 	v.addEvent(&VideoProcessingStarted{
 		VideoID:  v.ID,
 		VideoURL: v.URL,
@@ -115,7 +118,7 @@ func (v *Video) canChangeStatusTo(to VideoStatus) bool {
 		return false
 
 	case VideoStatusFailed:
-		return false
+		return to == VideoStatusProcessing
 
 	default:
 		return false

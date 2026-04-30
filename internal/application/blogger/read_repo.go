@@ -22,6 +22,17 @@ type VideoRow struct {
 	Comments    int
 	PublishedAt time.Time
 	CreatedAt   time.Time
+
+	Status       string
+	ErrorStage   *string
+	ErrorMessage *string
+
+	AnalysisProvider *string
+	RawPayload       *string
+
+	Prompt      *string
+	LLMProvider *string
+	LLMModel    *string
 }
 
 type ReadRepo interface {

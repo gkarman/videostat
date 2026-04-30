@@ -15,7 +15,7 @@ func BuildVideosWorkbook(items []*view.Video) (*excelize.File, error) {
 
 	first := true
 	for platform, videos := range grouped {
-		sheet := strings.Title(platform)
+		sheet := strings.ToUpper(platform[:1]) + platform[1:]
 
 		if first {
 			if err := f.SetSheetName("Sheet1", sheet); err != nil {
@@ -38,55 +38,64 @@ func BuildVideosWorkbook(items []*view.Video) (*excelize.File, error) {
 
 func groupByPlatform(items []*view.Video) map[string][]*view.Video {
 	res := make(map[string][]*view.Video)
-
 	for _, v := range items {
 		p := strings.ToLower(v.Platform)
 		res[p] = append(res[p], v)
 	}
-
 	return res
 }
 
-// ================= SHEET =================
+var headers = []string{
+	"BloggerURL",
+	"Title",
+	"URL",
+	"PublishedAt",
+	"CreatedAt",
+	"Views",
+	"Likes",
+	"Comments",
+	"Viral",
+	"Relevant",
+	"Status",
+	"ErrorStage",
+	"ErrorMessage",
+	"AnalysisProvider",
+	"AnalysisData",
+	"LLMProvider",
+	"LLMModel",
+	"Prompt",
+}
 
 func writeVideosSheet(f *excelize.File, sheet string, videos []*view.Video) error {
-	headers := []string{
-		"BloggerURL",
-		"Title",
-		"URL",
-		"PublishedAt",
-		"CreatedAt",
-		"Views",
-		"Likes",
-		"Comments",
-		"Viral",
-		"Relevant Title",
-	}
-
-	// --- Форматирование колонок и стилей ---
+	lastCol, _ := excelize.ColumnNumberToName(len(headers))
 
 	if err := f.SetColWidth(sheet, "A", "A", 45); err != nil {
 		return fmt.Errorf("set col width A: %w", err)
 	}
-
 	if err := f.SetColWidth(sheet, "B", "J", 20); err != nil {
 		return fmt.Errorf("set col width B-J: %w", err)
 	}
+	// Status, ErrorStage, ErrorMessage
+	if err := f.SetColWidth(sheet, "K", "M", 20); err != nil {
+		return fmt.Errorf("set col width K-M: %w", err)
+	}
+	// AnalysisProvider
+	if err := f.SetColWidth(sheet, "N", "N", 18); err != nil {
+		return fmt.Errorf("set col width N: %w", err)
+	}
+	if err := f.SetColWidth(sheet, "O", "R", 20); err != nil {
+		return fmt.Errorf("set col width O-R: %w", err)
+	}
 
 	style, err := f.NewStyle(&excelize.Style{
-		Alignment: &excelize.Alignment{
-			WrapText: false,
-		},
+		Alignment: &excelize.Alignment{WrapText: false},
 	})
 	if err != nil {
 		return fmt.Errorf("new style: %w", err)
 	}
-
-	if err := f.SetColStyle(sheet, "A:J", style); err != nil {
+	if err := f.SetColStyle(sheet, "A:"+lastCol, style); err != nil {
 		return fmt.Errorf("set col style: %w", err)
 	}
-
-	// --- Заголовки ---
 
 	for i, h := range headers {
 		cell, err := excelize.CoordinatesToCellName(i+1, 1)
@@ -106,55 +115,52 @@ func writeVideosSheet(f *excelize.File, sheet string, videos []*view.Video) erro
 		return f.SetCellValue(sheet, cell, value)
 	}
 
-	// --- Данные ---
+	deref := func(s *string) string {
+		if s == nil {
+			return ""
+		}
+		return *s
+	}
 
 	for i, v := range videos {
 		row := i + 2
 
-		if err := set(row, 1, v.BloggerURL); err != nil {
-			return err
-		}
-		if err := set(row, 2, v.Title); err != nil {
-			return err
-		}
-		if err := set(row, 3, v.URL); err != nil {
-			return err
-		}
-		if err := set(row, 4, v.PublishedAt.Format("2006-01-02")); err != nil {
-			return err
-		}
-		if err := set(row, 5, v.CreatedAt.Format("2006-01-02")); err != nil {
-			return err
-		}
-		if err := set(row, 6, v.Views); err != nil {
-			return err
-		}
-		if err := set(row, 7, v.Likes); err != nil {
-			return err
-		}
-		if err := set(row, 8, v.Comments); err != nil {
-			return err
-		}
-
-		mark := ""
+		viral := ""
 		if v.Viral {
-			mark = "+"
+			viral = "+"
 		}
-		if err := set(row, 9, mark); err != nil {
-			return err
-		}
-
 		relevant := "-"
 		if v.IsRelevant {
 			relevant = "+"
 		}
 
-		if err := set(row, 10, relevant); err != nil {
-			return err
+		vals := []any{
+			v.BloggerURL,
+			v.Title,
+			v.URL,
+			v.PublishedAt.Format("2006-01-02"),
+			v.CreatedAt.Format("2006-01-02"),
+			v.Views,
+			v.Likes,
+			v.Comments,
+			viral,
+			relevant,
+			v.Status,
+			deref(v.ErrorStage),
+			deref(v.ErrorMessage),
+			deref(v.AnalysisProvider),
+			deref(v.RawPayload),
+			deref(v.LLMProvider),
+			deref(v.LLMModel),
+			deref(v.Prompt),
+		}
+
+		for col, val := range vals {
+			if err := set(row, col+1, val); err != nil {
+				return err
+			}
 		}
 	}
-
-	// --- Фиксированная высота строк ---
 
 	for i := 1; i <= len(videos)+1; i++ {
 		if err := f.SetRowHeight(sheet, i, 18); err != nil {

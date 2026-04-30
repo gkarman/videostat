@@ -24,14 +24,19 @@ func NewGenerateVideoPrompt(r blogger.Repo, g application.VideoPromptGenerator) 
 func (c *GenerateVideoPrompt) Run(ctx context.Context, req reqdto.GenerateVideoPrompt) error {
 	log := logger.FromContext(ctx).With("component", "GenerateVideoPrompt", "videoID", req.VideoID)
 
+	v, err := c.r.GetVideoByID(ctx, req.VideoID)
+	if err != nil {
+		return fmt.Errorf("get video: %w", err)
+	}
+
 	va, err := c.r.GetVideoAnalysisByVideoID(ctx, req.VideoID)
 	if err != nil {
-		return fmt.Errorf("get video analysis: %w", err)
+		return c.failVideo(ctx, v, blogger.ErrorStageInsights, fmt.Errorf("get video analysis: %w", err))
 	}
 
 	prompt, err := c.g.Generate(ctx, va.RawPayload)
 	if err != nil {
-		return fmt.Errorf("generate prompt: %w", err)
+		return c.failVideo(ctx, v, blogger.ErrorStageInsights, fmt.Errorf("generate prompt: %w", err))
 	}
 
 	vp := &blogger.VideoPrompt{
@@ -44,12 +49,7 @@ func (c *GenerateVideoPrompt) Run(ctx context.Context, req reqdto.GenerateVideoP
 	}
 
 	if err = c.r.SaveVideoPrompt(ctx, vp); err != nil {
-		return fmt.Errorf("save video prompt: %w", err)
-	}
-
-	v, err := c.r.GetVideoByID(ctx, req.VideoID)
-	if err != nil {
-		return fmt.Errorf("get video: %w", err)
+		return c.failVideo(ctx, v, blogger.ErrorStageInsights, fmt.Errorf("save video prompt: %w", err))
 	}
 
 	if err = v.MarkReady(); err != nil {
@@ -62,4 +62,14 @@ func (c *GenerateVideoPrompt) Run(ctx context.Context, req reqdto.GenerateVideoP
 
 	log.Info("video prompt generated", "provider", vp.LLMProvider, "model", vp.LLMModel)
 	return nil
+}
+
+func (c *GenerateVideoPrompt) failVideo(ctx context.Context, v *blogger.Video, stage blogger.VideoErrorStage, cause error) error {
+	if err := v.MarkFailProcessing(stage, cause); err != nil {
+		return fmt.Errorf("%w (also failed to mark video as failed: %v)", cause, err)
+	}
+	if err := c.r.UpdateVideoState(ctx, v); err != nil {
+		return fmt.Errorf("%w (also failed to persist video failure: %v)", cause, err)
+	}
+	return cause
 }

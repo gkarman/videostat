@@ -37,6 +37,7 @@ func NewRouter(
 		sender:            sender,
 		createBlogger:     createBlogger,
 		listBloggersQuery: listBloggers,
+		listVideosQuery:   listVideos,
 		startProcessVideo: startProcessVideo,
 		state:             NewState(),
 		ui:                NewUI(),

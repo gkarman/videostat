@@ -41,20 +41,42 @@ func (r *QueryPostgres) ListBloggers(ctx context.Context) ([]blogger.BloggerRow,
 
 func (r *QueryPostgres) ListVideos(ctx context.Context) ([]blogger.VideoRow, error) {
 	rows, err := r.db.Query(ctx, `
-		SELECT 
+		SELECT
 		    v.id,
-		    p.name as platform_name,
-		    b.url as blogger_url,
+		    p.name            AS platform_name,
+		    b.url             AS blogger_url,
 		    v.url,
 		    v.title,
 		    v.views,
 		    v.likes,
 		    v.comments,
 		    v.published_at,
-		    v.created_at
+		    v.created_at,
+		    v.status,
+		    v.error_stage,
+		    v.error_message,
+		    va.provider       AS analysis_provider,
+		    va.raw_payload::text,
+		    vp.prompt,
+		    vp.llm_provider,
+		    vp.llm_model
 		FROM videos v
 		JOIN bloggers b ON b.id = v.blogger_id
 		JOIN platforms p ON p.id = b.platform_id
+		LEFT JOIN LATERAL (
+		    SELECT provider, raw_payload
+		    FROM video_analysis
+		    WHERE video_id = v.id
+		    ORDER BY created_at DESC
+		    LIMIT 1
+		) va ON true
+		LEFT JOIN LATERAL (
+		    SELECT prompt, llm_provider, llm_model
+		    FROM video_prompts
+		    WHERE video_id = v.id
+		    ORDER BY created_at DESC
+		    LIMIT 1
+		) vp ON true
 	`)
 	if err != nil {
 		return nil, err
@@ -76,6 +98,14 @@ func (r *QueryPostgres) ListVideos(ctx context.Context) ([]blogger.VideoRow, err
 			&v.Comments,
 			&v.PublishedAt,
 			&v.CreatedAt,
+			&v.Status,
+			&v.ErrorStage,
+			&v.ErrorMessage,
+			&v.AnalysisProvider,
+			&v.RawPayload,
+			&v.Prompt,
+			&v.LLMProvider,
+			&v.LLMModel,
 		); err != nil {
 			return nil, err
 		}

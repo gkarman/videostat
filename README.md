@@ -228,8 +228,8 @@ make run_worker_notify   # notifications
 - [x] Core event-driven architecture
 - [x] RabbitMQ pipeline
 - [x] Multi-transport API
-- [ ] Deep video analysis (transcription, hooks)
-- [ ] AI video generation pipeline
+- [x] Deep video analysis (transcription, hooks)
+- [x] AI video generation pipeline
 - [ ] Auto publishing system
 
 ---

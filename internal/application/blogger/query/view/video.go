@@ -15,4 +15,15 @@ type Video struct {
 	CreatedAt   time.Time `json:"created_at"`
 	Viral       bool      `json:"viral"`
 	IsRelevant  bool      `json:"is_relevant"`
+
+	Status       string
+	ErrorStage   *string
+	ErrorMessage *string
+
+	AnalysisProvider *string
+	RawPayload       *string
+
+	Prompt      *string
+	LLMProvider *string
+	LLMModel    *string
 }

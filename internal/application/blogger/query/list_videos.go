@@ -34,16 +34,24 @@ func (q *ListVideos) Run(ctx context.Context) (*respdto.ListVideos, error) {
 	items := make([]*view.Video, 0, len(rows))
 	for _, r := range rows {
 		items = append(items, &view.Video{
-			ID:          r.ID,
-			Platform:    r.Platform,
-			BloggerURL:  r.BloggerURL,
-			URL:         r.URL,
-			Title:       r.Title,
-			Views:       r.Views,
-			Likes:       r.Likes,
-			Comments:    r.Comments,
-			PublishedAt: r.PublishedAt,
-			CreatedAt:   r.CreatedAt,
+			ID:               r.ID,
+			Platform:         r.Platform,
+			BloggerURL:       r.BloggerURL,
+			URL:              r.URL,
+			Title:            r.Title,
+			Views:            r.Views,
+			Likes:            r.Likes,
+			Comments:         r.Comments,
+			PublishedAt:      r.PublishedAt,
+			CreatedAt:        r.CreatedAt,
+			Status:           r.Status,
+			ErrorStage:       r.ErrorStage,
+			ErrorMessage:     r.ErrorMessage,
+			AnalysisProvider: r.AnalysisProvider,
+			RawPayload:       r.RawPayload,
+			Prompt:           r.Prompt,
+			LLMProvider:      r.LLMProvider,
+			LLMModel:         r.LLMModel,
 		})
 	}
 	q.enricher.Enrich(items)

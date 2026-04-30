@@ -49,7 +49,6 @@ func (a *AssemblyAIAnalyzer) submit(ctx context.Context, audioURL string) (strin
 		"audio_url":          audioURL,
 		"speech_models":      []string{"universal-2"},
 		"auto_highlights":    true,
-		"auto_chapters":      true,
 		"sentiment_analysis": true,
 		"entity_detection":   true,
 		"summarization":      true,
