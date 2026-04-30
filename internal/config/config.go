@@ -14,6 +14,8 @@ type Config struct {
 	Apify       ApifyConfig
 	Assemblyai  AssemblyaiConfig
 	Anthropic   AnthropicConfig
+	OpenRouter  OpenRouterConfig
+	LLM         LLMConfig
 }
 
 type DBConfig struct {
@@ -94,4 +96,15 @@ type AssemblyaiConfig struct {
 type AnthropicConfig struct {
 	Token string `env:"ANTHROPIC_TOKEN" env-default:""`
 	Model string `env:"ANTHROPIC_MODEL" env-default:"claude-sonnet-4-6"`
+}
+
+type OpenRouterConfig struct {
+	Token string `env:"OPENROUTER_TOKEN" env-default:""`
+	Model string `env:"OPENROUTER_MODEL" env-default:"google/gemma-3-27b-it:free"`
+}
+
+// LLMConfig selects which LLM provider is active.
+// LLM_PROVIDER: "anthropic" | "openrouter"
+type LLMConfig struct {
+	Provider string `env:"LLM_PROVIDER" env-default:"anthropic"`
 }
