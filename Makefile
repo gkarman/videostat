@@ -6,7 +6,7 @@ define run_with_env
 endef
 
 up:
-	docker compose up -d db rabbitmq
+	docker compose up -d db rabbitmq minio
 
 down:
 	docker compose down

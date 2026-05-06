@@ -17,6 +17,7 @@ type Config struct {
 	OpenRouter  OpenRouterConfig
 	OpenAI      OpenAIConfig
 	LLM         LLMConfig
+	S3          S3Config
 }
 
 type DBConfig struct {
@@ -113,4 +114,12 @@ type OpenAIConfig struct {
 // LLM_PROVIDER: "anthropic" | "openrouter" | "openai"
 type LLMConfig struct {
 	Provider string `env:"LLM_PROVIDER" env-default:"anthropic"`
+}
+
+type S3Config struct {
+	Endpoint  string `env:"S3_ENDPOINT" env-default:"http://localhost:9000"`
+	AccessKey string `env:"S3_ACCESS_KEY" env-default:"minioadmin"`
+	SecretKey string `env:"S3_SECRET_KEY" env-default:"minioadmin"`
+	Bucket    string `env:"S3_BUCKET" env-default:"videostat"`
+	Region    string `env:"S3_REGION" env-default:"us-east-1"`
 }

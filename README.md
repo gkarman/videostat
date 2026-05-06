@@ -144,7 +144,17 @@ make up
 
 ---
 
-### 5. Миграции
+### 5. Создание S3 бакета (MinIO)
+
+После `make up` открыть MinIO Console: http://localhost:9001
+
+Логин: `minioadmin` / `minioadmin`
+
+Создать бакет вручную: **Buckets → Create Bucket → `videostat`**
+
+---
+
+### 6. Миграции
 
 ```bash
 make migrate-up
@@ -152,7 +162,7 @@ make migrate-up
 
 ---
 
-### 6. Генерация protobuf
+### 7. Генерация protobuf
 
 ```bash
 make proto-gen
@@ -160,7 +170,7 @@ make proto-gen
 
 ---
 
-### 7. Запуск сервисов
+### 8. Запуск сервисов
 
 ```bash
 make run                 # API
