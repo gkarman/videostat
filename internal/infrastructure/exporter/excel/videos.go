@@ -46,65 +46,116 @@ func groupByPlatform(items []*view.Video) map[string][]*view.Video {
 }
 
 var headers = []string{
-	"BloggerURL",
-	"Title",
-	"URL",
-	"PublishedAt",
-	"CreatedAt",
-	"Views",
-	"Likes",
-	"Comments",
-	"Viral",
-	"Relevant",
-	"Status",
-	"ErrorStage",
-	"ErrorMessage",
-	"AnalysisProvider",
-	"AnalysisData",
-	"LLMProvider",
-	"LLMModel",
-	"Prompt",
+	"Ссылка",
+	"Заголовок",
+	"Ссылка",
+	"Выложено",
+	"Добавлено нам в БД",
+	"Просмотры",
+	"Лайки",
+	"Комментарии",
+	"Признак вирусности",
+	"Признак релевантности заголовка",
+	"Статус обработки",
+	"Стадия на которой возника ошибка",
+	"Ошибка",
+	"Ресурс аналица видео",
+	"Данные от ресурса анализа видео",
+	"ИИ",
+	"ИИ модель",
+	"Бриф",
+	"Сценарий",
+	"Платформа генерации",
+	"ID генерации",
+	"Статус генерации",
+	"Ошибка генерации",
+	"Ссылка на S3",
+}
+
+type columnGroup struct {
+	title    string
+	fromCol  int
+	toCol    int
+}
+
+var columnGroups = []columnGroup{
+	{"Блогер", 1, 1},
+	{"Данные о видео", 2, 8},
+	{"Показатели качества контента", 9, 10},
+	{"Анализ видео донора", 11, 15},
+	{"Данные для генерации нового видео", 16, 19},
+	{"Данные о новом видео", 20, 24},
 }
 
 func writeVideosSheet(f *excelize.File, sheet string, videos []*view.Video) error {
 	lastCol, _ := excelize.ColumnNumberToName(len(headers))
 
-	if err := f.SetColWidth(sheet, "A", "A", 45); err != nil {
+	if err := f.SetColWidth(sheet, "A", "A", 60); err != nil {
 		return fmt.Errorf("set col width A: %w", err)
 	}
-	if err := f.SetColWidth(sheet, "B", "J", 20); err != nil {
-		return fmt.Errorf("set col width B-J: %w", err)
-	}
-	// Status, ErrorStage, ErrorMessage
-	if err := f.SetColWidth(sheet, "K", "M", 20); err != nil {
-		return fmt.Errorf("set col width K-M: %w", err)
-	}
-	// AnalysisProvider
-	if err := f.SetColWidth(sheet, "N", "N", 18); err != nil {
-		return fmt.Errorf("set col width N: %w", err)
-	}
-	if err := f.SetColWidth(sheet, "O", "R", 20); err != nil {
-		return fmt.Errorf("set col width O-R: %w", err)
+	if err := f.SetColWidth(sheet, "B", lastCol, 20); err != nil {
+		return fmt.Errorf("set col width: %w", err)
 	}
 
-	style, err := f.NewStyle(&excelize.Style{
+	dataStyle, err := f.NewStyle(&excelize.Style{
 		Alignment: &excelize.Alignment{WrapText: false},
 	})
 	if err != nil {
-		return fmt.Errorf("new style: %w", err)
+		return fmt.Errorf("new data style: %w", err)
 	}
-	if err := f.SetColStyle(sheet, "A:"+lastCol, style); err != nil {
+	if err := f.SetColStyle(sheet, "A:"+lastCol, dataStyle); err != nil {
 		return fmt.Errorf("set col style: %w", err)
 	}
 
+	groupStyle, err := f.NewStyle(&excelize.Style{
+		Alignment: &excelize.Alignment{Horizontal: "center", Vertical: "center", WrapText: false},
+	})
+	if err != nil {
+		return fmt.Errorf("new group style: %w", err)
+	}
+
+	headerStyle, err := f.NewStyle(&excelize.Style{
+		Alignment: &excelize.Alignment{WrapText: true, Vertical: "top"},
+	})
+	if err != nil {
+		return fmt.Errorf("new header style: %w", err)
+	}
+
+	// row 1: group labels
+	for _, g := range columnGroups {
+		fromCell, _ := excelize.CoordinatesToCellName(g.fromCol, 1)
+		toCell, _ := excelize.CoordinatesToCellName(g.toCol, 1)
+		if g.fromCol != g.toCol {
+			if err := f.MergeCell(sheet, fromCell, toCell); err != nil {
+				return fmt.Errorf("merge group cells %s:%s: %w", fromCell, toCell, err)
+			}
+		}
+		if err := f.SetCellValue(sheet, fromCell, g.title); err != nil {
+			return fmt.Errorf("set group label %s: %w", fromCell, err)
+		}
+		if err := f.SetCellStyle(sheet, fromCell, toCell, groupStyle); err != nil {
+			return fmt.Errorf("set group style %s: %w", fromCell, err)
+		}
+	}
+	if err := f.SetRowHeight(sheet, 1, 30); err != nil {
+		return fmt.Errorf("set group row height: %w", err)
+	}
+
+	// row 2: column headers
 	for i, h := range headers {
-		cell, err := excelize.CoordinatesToCellName(i+1, 1)
+		cell, err := excelize.CoordinatesToCellName(i+1, 2)
 		if err != nil {
 			return fmt.Errorf("header coord: %w", err)
 		}
 		if err := f.SetCellValue(sheet, cell, h); err != nil {
 			return fmt.Errorf("set header %s: %w", cell, err)
 		}
+		if err := f.SetCellStyle(sheet, cell, cell, headerStyle); err != nil {
+			return fmt.Errorf("set header style %s: %w", cell, err)
+		}
+	}
+	if err := f.SetRowHeight(sheet, 2, 40); err != nil {
+		return fmt.Errorf("set header row height: %w", err)
 	}
 
 	set := func(row, col int, value any) error {
@@ -123,7 +174,7 @@ func writeVideosSheet(f *excelize.File, sheet string, videos []*view.Video) erro
 	}
 
 	for i, v := range videos {
-		row := i + 2
+		row := i + 3
 
 		viral := ""
 		if v.Viral {
@@ -132,6 +183,10 @@ func writeVideosSheet(f *excelize.File, sheet string, videos []*view.Video) erro
 		relevant := "-"
 		if v.IsRelevant {
 			relevant = "+"
+		}
+		status := v.Status
+		if status == "created" {
+			status = ""
 		}
 
 		vals := []any{
@@ -145,14 +200,20 @@ func writeVideosSheet(f *excelize.File, sheet string, videos []*view.Video) erro
 			v.Comments,
 			viral,
 			relevant,
-			v.Status,
+			status,
 			deref(v.ErrorStage),
 			deref(v.ErrorMessage),
 			deref(v.AnalysisProvider),
 			deref(v.RawPayload),
 			deref(v.LLMProvider),
 			deref(v.LLMModel),
-			deref(v.Prompt),
+			deref(v.Brief),
+			deref(v.Script),
+			deref(v.GenerationPlatform),
+			deref(v.GenerationExternalID),
+			deref(v.GenerationStatus),
+			deref(v.GenerationErrorMessage),
+			deref(v.GenerationS3URL),
 		}
 
 		for col, val := range vals {
@@ -162,7 +223,7 @@ func writeVideosSheet(f *excelize.File, sheet string, videos []*view.Video) erro
 		}
 	}
 
-	for i := 1; i <= len(videos)+1; i++ {
+	for i := 3; i <= len(videos)+2; i++ {
 		if err := f.SetRowHeight(sheet, i, 18); err != nil {
 			return err
 		}

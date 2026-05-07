@@ -297,12 +297,106 @@ func (r *PostgresRepo) GetVideoAnalysisByVideoID(ctx context.Context, videoID st
 
 func (r *PostgresRepo) SaveVideoPrompt(ctx context.Context, vp *blogger.VideoPrompt) error {
 	const q = `
-		INSERT INTO video_prompts (id, video_id, llm_provider, llm_model, prompt, created_at)
-		VALUES ($1, $2, $3, $4, $5, $6)
+		INSERT INTO video_prompts (id, video_id, llm_provider, llm_model, brief, script, created_at)
+		VALUES ($1, $2, $3, $4, $5, $6, $7)
 	`
-	_, err := r.db.Exec(ctx, q, vp.ID, vp.VideoID, vp.LLMProvider, vp.LLMModel, vp.Prompt, vp.CreatedAt)
+	_, err := r.db.Exec(ctx, q, vp.ID, vp.VideoID, vp.LLMProvider, vp.LLMModel, vp.Brief, vp.Script, vp.CreatedAt)
 	if err != nil {
 		return fmt.Errorf("save video prompt: %w", err)
+	}
+	return nil
+}
+
+func (r *PostgresRepo) GetVideoPromptByVideoID(ctx context.Context, videoID string) (*blogger.VideoPrompt, error) {
+	const q = `
+		SELECT id, video_id, llm_provider, llm_model, brief, script, created_at
+		FROM video_prompts
+		WHERE video_id = $1
+		ORDER BY created_at DESC
+		LIMIT 1
+	`
+	var vp blogger.VideoPrompt
+	err := r.db.QueryRow(ctx, q, videoID).Scan(
+		&vp.ID, &vp.VideoID, &vp.LLMProvider, &vp.LLMModel, &vp.Brief, &vp.Script, &vp.CreatedAt,
+	)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return nil, blogger.ErrVideoNotFound
+		}
+		return nil, fmt.Errorf("get video prompt by video id: %w", err)
+	}
+	return &vp, nil
+}
+
+func (r *PostgresRepo) SaveVideoGeneration(ctx context.Context, vg *blogger.VideoGeneration) error {
+	const q = `
+		INSERT INTO video_generations (id, video_id, platform, external_id, status, s3_url, error_message, created_at, updated_at)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+	`
+	_, err := r.db.Exec(ctx, q,
+		vg.ID, vg.VideoID, vg.Platform, vg.ExternalID, vg.Status, vg.S3URL, vg.ErrorMessage, vg.CreatedAt, vg.UpdatedAt,
+	)
+	if err != nil {
+		return fmt.Errorf("save video generation: %w", err)
+	}
+	return nil
+}
+
+func (r *PostgresRepo) GetVideoGenerationByExternalID(ctx context.Context, externalID string) (*blogger.VideoGeneration, error) {
+	const q = `
+		SELECT id, video_id, platform, external_id, status, s3_url, error_message, created_at, updated_at
+		FROM video_generations
+		WHERE external_id = $1
+		LIMIT 1
+	`
+	var vg blogger.VideoGeneration
+	err := r.db.QueryRow(ctx, q, externalID).Scan(
+		&vg.ID, &vg.VideoID, &vg.Platform, &vg.ExternalID, &vg.Status, &vg.S3URL, &vg.ErrorMessage, &vg.CreatedAt, &vg.UpdatedAt,
+	)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return nil, blogger.ErrVideoNotFound
+		}
+		return nil, fmt.Errorf("get video generation by external id: %w", err)
+	}
+	return &vg, nil
+}
+
+func (r *PostgresRepo) ListPendingVideoGenerations(ctx context.Context) ([]*blogger.VideoGeneration, error) {
+	const q = `
+		SELECT id, video_id, platform, external_id, status, s3_url, error_message, created_at, updated_at
+		FROM video_generations
+		WHERE status IN ('pending', 'processing')
+		ORDER BY created_at ASC
+	`
+	rows, err := r.db.Query(ctx, q)
+	if err != nil {
+		return nil, fmt.Errorf("list pending video generations: %w", err)
+	}
+	defer rows.Close()
+
+	var result []*blogger.VideoGeneration
+	for rows.Next() {
+		var vg blogger.VideoGeneration
+		if err := rows.Scan(
+			&vg.ID, &vg.VideoID, &vg.Platform, &vg.ExternalID, &vg.Status, &vg.S3URL, &vg.ErrorMessage, &vg.CreatedAt, &vg.UpdatedAt,
+		); err != nil {
+			return nil, fmt.Errorf("scan video generation: %w", err)
+		}
+		result = append(result, &vg)
+	}
+	return result, rows.Err()
+}
+
+func (r *PostgresRepo) UpdateVideoGeneration(ctx context.Context, vg *blogger.VideoGeneration) error {
+	const q = `
+		UPDATE video_generations
+		SET status = $1, s3_url = $2, error_message = $3, updated_at = $4
+		WHERE id = $5
+	`
+	_, err := r.db.Exec(ctx, q, vg.Status, vg.S3URL, vg.ErrorMessage, vg.UpdatedAt, vg.ID)
+	if err != nil {
+		return fmt.Errorf("update video generation: %w", err)
 	}
 	return nil
 }

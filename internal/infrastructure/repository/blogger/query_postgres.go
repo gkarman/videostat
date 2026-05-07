@@ -57,9 +57,15 @@ func (r *QueryPostgres) ListVideos(ctx context.Context) ([]blogger.VideoRow, err
 		    v.error_message,
 		    va.provider       AS analysis_provider,
 		    va.raw_payload::text,
-		    vp.prompt,
+		    vp.brief,
+		    vp.script,
 		    vp.llm_provider,
-		    vp.llm_model
+		    vp.llm_model,
+		    vg.platform        AS generation_platform,
+		    vg.external_id     AS generation_external_id,
+		    vg.status          AS generation_status,
+		    vg.s3_url          AS generation_s3_url,
+		    vg.error_message   AS generation_error_message
 		FROM videos v
 		JOIN bloggers b ON b.id = v.blogger_id
 		JOIN platforms p ON p.id = b.platform_id
@@ -71,12 +77,19 @@ func (r *QueryPostgres) ListVideos(ctx context.Context) ([]blogger.VideoRow, err
 		    LIMIT 1
 		) va ON true
 		LEFT JOIN LATERAL (
-		    SELECT prompt, llm_provider, llm_model
+		    SELECT brief, script, llm_provider, llm_model
 		    FROM video_prompts
 		    WHERE video_id = v.id
 		    ORDER BY created_at DESC
 		    LIMIT 1
 		) vp ON true
+		LEFT JOIN LATERAL (
+		    SELECT platform, external_id, status, s3_url, error_message
+		    FROM video_generations
+		    WHERE video_id = v.id
+		    ORDER BY created_at DESC
+		    LIMIT 1
+		) vg ON true
 	`)
 	if err != nil {
 		return nil, err
@@ -103,9 +116,15 @@ func (r *QueryPostgres) ListVideos(ctx context.Context) ([]blogger.VideoRow, err
 			&v.ErrorMessage,
 			&v.AnalysisProvider,
 			&v.RawPayload,
-			&v.Prompt,
+			&v.Brief,
+			&v.Script,
 			&v.LLMProvider,
 			&v.LLMModel,
+			&v.GenerationPlatform,
+			&v.GenerationExternalID,
+			&v.GenerationStatus,
+			&v.GenerationS3URL,
+			&v.GenerationErrorMessage,
 		); err != nil {
 			return nil, err
 		}

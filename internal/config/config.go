@@ -18,6 +18,7 @@ type Config struct {
 	OpenAI      OpenAIConfig
 	LLM         LLMConfig
 	S3          S3Config
+	HeyGen      HeyGenConfig
 }
 
 type DBConfig struct {
@@ -114,6 +115,12 @@ type OpenAIConfig struct {
 // LLM_PROVIDER: "anthropic" | "openrouter" | "openai"
 type LLMConfig struct {
 	Provider string `env:"LLM_PROVIDER" env-default:"anthropic"`
+}
+
+type HeyGenConfig struct {
+	APIKey   string `env:"HEYGEN_API_KEY" env-default:""`
+	AvatarID string `env:"HEYGEN_AVATAR_ID" env-default:""`
+	VoiceID  string `env:"HEYGEN_VOICE_ID" env-default:""`
 }
 
 type S3Config struct {

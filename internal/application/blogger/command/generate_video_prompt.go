@@ -8,6 +8,7 @@ import (
 	"github.com/gkarman/demo/internal/application"
 	"github.com/gkarman/demo/internal/application/blogger/command/reqdto"
 	"github.com/gkarman/demo/internal/domain/blogger"
+	"github.com/gkarman/demo/internal/infrastructure/llm"
 	"github.com/gkarman/demo/internal/infrastructure/logger"
 	"github.com/google/uuid"
 )
@@ -15,10 +16,11 @@ import (
 type GenerateVideoPrompt struct {
 	r blogger.Repo
 	g application.VideoPromptGenerator
+	d application.Dispatcher
 }
 
-func NewGenerateVideoPrompt(r blogger.Repo, g application.VideoPromptGenerator) *GenerateVideoPrompt {
-	return &GenerateVideoPrompt{r: r, g: g}
+func NewGenerateVideoPrompt(r blogger.Repo, g application.VideoPromptGenerator, d application.Dispatcher) *GenerateVideoPrompt {
+	return &GenerateVideoPrompt{r: r, g: g, d: d}
 }
 
 func (c *GenerateVideoPrompt) Run(ctx context.Context, req reqdto.GenerateVideoPrompt) error {
@@ -34,9 +36,14 @@ func (c *GenerateVideoPrompt) Run(ctx context.Context, req reqdto.GenerateVideoP
 		return c.failVideo(ctx, v, blogger.ErrorStageInsights, fmt.Errorf("get video analysis: %w", err))
 	}
 
-	prompt, err := c.g.Generate(ctx, va.RawPayload)
+	raw, err := c.g.Generate(ctx, va.RawPayload)
 	if err != nil {
 		return c.failVideo(ctx, v, blogger.ErrorStageInsights, fmt.Errorf("generate prompt: %w", err))
+	}
+
+	content, err := llm.ParseGeneratedContent(raw)
+	if err != nil {
+		return c.failVideo(ctx, v, blogger.ErrorStageInsights, fmt.Errorf("parse llm response: %w", err))
 	}
 
 	vp := &blogger.VideoPrompt{
@@ -44,7 +51,8 @@ func (c *GenerateVideoPrompt) Run(ctx context.Context, req reqdto.GenerateVideoP
 		VideoID:     req.VideoID,
 		LLMProvider: c.g.ProviderName(),
 		LLMModel:    c.g.ModelName(),
-		Prompt:      prompt,
+		Brief:       string(content.Brief),
+		Script:      content.Script,
 		CreatedAt:   time.Now(),
 	}
 
@@ -56,9 +64,13 @@ func (c *GenerateVideoPrompt) Run(ctx context.Context, req reqdto.GenerateVideoP
 		return fmt.Errorf("mark ready: %w", err)
 	}
 
+	v.PromptGenerated()
+
 	if err = c.r.UpdateVideoState(ctx, v); err != nil {
 		return fmt.Errorf("update video state: %w", err)
 	}
+
+	c.d.Dispatch(ctx, v.PullEvents())
 
 	log.Info("video prompt generated", "provider", vp.LLMProvider, "model", vp.LLMModel)
 	return nil

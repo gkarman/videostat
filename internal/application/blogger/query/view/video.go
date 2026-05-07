@@ -23,7 +23,14 @@ type Video struct {
 	AnalysisProvider *string
 	RawPayload       *string
 
-	Prompt      *string
+	Brief       *string
+	Script      *string
 	LLMProvider *string
 	LLMModel    *string
+
+	GenerationPlatform      *string
+	GenerationExternalID    *string
+	GenerationStatus        *string
+	GenerationS3URL         *string
+	GenerationErrorMessage  *string
 }

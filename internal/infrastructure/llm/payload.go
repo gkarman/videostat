@@ -3,19 +3,21 @@ package llm
 import "encoding/json"
 
 type AnalysisSummary struct {
-	Transcript     string `json:"transcript"`
-	Summary        any    `json:"summary,omitempty"`
-	Chapters       any    `json:"chapters,omitempty"`
-	KeyHighlights  any    `json:"key_highlights,omitempty"`
-	SentimentPeaks any    `json:"sentiment_peaks,omitempty"`
-	Entities       any    `json:"entities,omitempty"`
+	DurationSeconds int    `json:"duration_seconds"`
+	Transcript      string `json:"transcript"`
+	Summary         any    `json:"summary,omitempty"`
+	Chapters        any    `json:"chapters,omitempty"`
+	KeyHighlights   any    `json:"key_highlights,omitempty"`
+	SentimentPeaks  any    `json:"sentiment_peaks,omitempty"`
+	Entities        any    `json:"entities,omitempty"`
 }
 
 func ExtractSummary(raw []byte) (*AnalysisSummary, error) {
 	var payload struct {
-		Text    string `json:"text"`
-		Summary string `json:"summary"`
-		Chapters []struct {
+		Text          string `json:"text"`
+		AudioDuration int    `json:"audio_duration"`
+		Summary       string `json:"summary"`
+		Chapters      []struct {
 			Start    int    `json:"start"`
 			End      int    `json:"end"`
 			Headline string `json:"headline"`
@@ -47,7 +49,8 @@ func ExtractSummary(raw []byte) (*AnalysisSummary, error) {
 	}
 
 	s := &AnalysisSummary{
-		Transcript: payload.Text,
+		DurationSeconds: payload.AudioDuration,
+		Transcript:      payload.Text,
 	}
 
 	if payload.Summary != "" {
@@ -76,20 +79,33 @@ func ExtractSummary(raw []byte) (*AnalysisSummary, error) {
 	return s, nil
 }
 
-const SystemPrompt = `You are an expert content strategist and video scriptwriter specializing in talking head videos.
+const SystemPrompt = `You are an expert content strategist specializing in short-form vertical video (TikTok, YouTube Shorts, Instagram Reels) about retirement planning and personal finance in the USA.
 
-Given a video transcript with analysis data (highlights, chapters, sentiment, entities, summary),
-your task is to generate a detailed creative prompt for producing a new talking head video
-that captures the same core message, energy, and persuasive hooks.
+You receive a transcript and analysis of a viral donor video. Your job:
+1. Decode the viral formula of the donor — its hook structure, pacing, emotional arc, key facts.
+2. Produce a creative brief and a word-for-word avatar script in the same style, adapted for a US retirement finance audience.
 
-The prompt must include:
-1. Core message — the single most important idea the video conveys
-2. Target audience — who this content is for
-3. Opening hook — the first 10 seconds that will stop the scroll
-4. Key talking points — 3-5 main arguments or insights to cover
-5. Emotional arc — how the energy and tone should shift throughout
-6. Memorable phrases — specific lines or formulations worth keeping or adapting
-7. Delivery style — pace, tone, body language cues for the speaker
-8. Closing CTA — how to end and what action to drive
+Script length rule: target_words = duration_seconds × 2.2 (e.g. 60 s → ~130 words, 90 s → ~200 words).
 
-Return only the prompt text, ready to use for video production. No preamble, no explanations.`
+Output ONLY a valid JSON object — no markdown fences, no explanation, nothing else:
+
+{
+  "brief": {
+    "core_message": "single most important idea the new video conveys",
+    "target_audience": "specific description of who this is for",
+    "opening_hook": "exact first 1-2 sentences that stop the scroll",
+    "key_talking_points": ["point 1", "point 2", "point 3"],
+    "emotional_arc": "how tone and energy shift from start to finish",
+    "memorable_phrases": ["phrase 1", "phrase 2"],
+    "delivery_style": "pace, tone, energy level — mirror the donor",
+    "closing_cta": "final sentence and the one action to drive"
+  },
+  "script": "Full word-for-word script for the avatar. Plain spoken English only — no bullet points, no markdown, no stage directions, no headers."
+}
+
+Script rules:
+- Natural spoken language, as if talking directly to camera.
+- Mirror the donor's pacing and energy exactly.
+- Frame financial insights using US retirement concepts (Social Security, 401(k), IRA, Medicare, RMDs) where relevant.
+- Word count must match duration_seconds × 2.2.
+- End with a clear, simple call to action.`

@@ -7,6 +7,7 @@ type VideoPrompt struct {
 	VideoID     string
 	LLMProvider string
 	LLMModel    string
-	Prompt      string
+	Brief       string
+	Script      string
 	CreatedAt   time.Time
 }

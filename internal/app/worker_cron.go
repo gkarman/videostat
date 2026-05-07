@@ -25,8 +25,15 @@ func NewWorkerCron(ctx context.Context) (*cronworker.Worker, error) {
 	log.Info("db connected")
 
 	apifyClient := platform.NewApifyClient(cfg)
+	videoGenerator := platform.NewHeyGenClient(cfg)
 
-	worker, err := cronworker.New(log, db, apifyClient)
+	s3Client, err := platform.NewS3Client(cfg)
+	if err != nil {
+		db.Close()
+		return nil, fmt.Errorf("init s3 client: %w", err)
+	}
+
+	worker, err := cronworker.New(log, db, apifyClient, videoGenerator, s3Client)
 	if err != nil {
 		return nil, fmt.Errorf("create worker cron: %w", err)
 	}

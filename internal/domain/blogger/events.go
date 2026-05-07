@@ -31,3 +31,8 @@ type VideoProcessingFailed struct {
 	ErrorMessage string
 	At           time.Time
 }
+
+type VideoPromptGenerated struct {
+	VideoID string
+	At      time.Time
+}

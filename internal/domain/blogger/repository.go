@@ -18,4 +18,9 @@ type Repo interface {
 	SaveVideoAnalysis(ctx context.Context, va *VideoAnalysis) error
 	GetVideoAnalysisByVideoID(ctx context.Context, videoID string) (*VideoAnalysis, error)
 	SaveVideoPrompt(ctx context.Context, vp *VideoPrompt) error
+	GetVideoPromptByVideoID(ctx context.Context, videoID string) (*VideoPrompt, error)
+	SaveVideoGeneration(ctx context.Context, vg *VideoGeneration) error
+	GetVideoGenerationByExternalID(ctx context.Context, externalID string) (*VideoGeneration, error)
+	ListPendingVideoGenerations(ctx context.Context) ([]*VideoGeneration, error)
+	UpdateVideoGeneration(ctx context.Context, vg *VideoGeneration) error
 }

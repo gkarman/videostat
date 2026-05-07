@@ -36,7 +36,6 @@ func NewWorkerCore(ctx context.Context) (*core.Worker, error) {
 		db.Close()
 		return nil, fmt.Errorf("init rabbit consumer: %w", err)
 	}
-
 	log.Info("rabbit consumer connected")
 
 	log.Info("rabbit publisher connect...")
@@ -49,12 +48,16 @@ func NewWorkerCore(ctx context.Context) (*core.Worker, error) {
 
 	apifyClient := platform.NewApifyClient(cfg)
 	analyzer := platform.NewAssemblyAIAnalyzer(cfg)
+
 	promptGenerator, err := platform.NewVideoPromptGenerator(cfg)
 	if err != nil {
 		db.Close()
 		return nil, fmt.Errorf("init prompt generator: %w", err)
 	}
-	router := core.NewRouterWithHandlers(log, db, apifyClient, analyzer, promptGenerator, publisher)
+
+	videoGenerator := platform.NewHeyGenClient(cfg)
+
+	router := core.NewRouterWithHandlers(log, db, apifyClient, analyzer, promptGenerator, videoGenerator, publisher)
 	worker := core.New(log, consumer, router)
 
 	return worker, nil

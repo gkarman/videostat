@@ -13,6 +13,7 @@ type InMemoryRepo struct {
 	videos               map[string]*blogger.Video
 	analyses             []*blogger.VideoAnalysis
 	prompts              []*blogger.VideoPrompt
+	generations          []*blogger.VideoGeneration
 	SaveVideoErrFor      map[string]error // externalID -> error
 	SaveVideoAnalysisErr error
 }
@@ -180,9 +181,62 @@ func (r *InMemoryRepo) GetVideoAnalysisByVideoID(_ context.Context, videoID stri
 	return nil, blogger.ErrVideoNotFound
 }
 
+func (r *InMemoryRepo) GetVideoPromptByVideoID(_ context.Context, videoID string) (*blogger.VideoPrompt, error) {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	for i := len(r.prompts) - 1; i >= 0; i-- {
+		if r.prompts[i].VideoID == videoID {
+			return r.prompts[i], nil
+		}
+	}
+	return nil, blogger.ErrVideoNotFound
+}
+
 func (r *InMemoryRepo) SaveVideoPrompt(_ context.Context, vp *blogger.VideoPrompt) error {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 	r.prompts = append(r.prompts, vp)
 	return nil
+}
+
+func (r *InMemoryRepo) SaveVideoGeneration(_ context.Context, vg *blogger.VideoGeneration) error {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	r.generations = append(r.generations, vg)
+	return nil
+}
+
+func (r *InMemoryRepo) GetVideoGenerationByExternalID(_ context.Context, externalID string) (*blogger.VideoGeneration, error) {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	for _, vg := range r.generations {
+		if vg.ExternalID == externalID {
+			return vg, nil
+		}
+	}
+	return nil, blogger.ErrVideoNotFound
+}
+
+func (r *InMemoryRepo) ListPendingVideoGenerations(_ context.Context) ([]*blogger.VideoGeneration, error) {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	var result []*blogger.VideoGeneration
+	for _, vg := range r.generations {
+		if vg.Status == blogger.VideoGenerationPending || vg.Status == blogger.VideoGenerationProcessing {
+			result = append(result, vg)
+		}
+	}
+	return result, nil
+}
+
+func (r *InMemoryRepo) UpdateVideoGeneration(_ context.Context, vg *blogger.VideoGeneration) error {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	for i, stored := range r.generations {
+		if stored.ID == vg.ID {
+			r.generations[i] = vg
+			return nil
+		}
+	}
+	return blogger.ErrVideoNotFound
 }

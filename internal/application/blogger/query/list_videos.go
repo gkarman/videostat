@@ -49,9 +49,15 @@ func (q *ListVideos) Run(ctx context.Context) (*respdto.ListVideos, error) {
 			ErrorMessage:     r.ErrorMessage,
 			AnalysisProvider: r.AnalysisProvider,
 			RawPayload:       r.RawPayload,
-			Prompt:           r.Prompt,
+			Brief:            r.Brief,
+			Script:           r.Script,
 			LLMProvider:      r.LLMProvider,
 			LLMModel:         r.LLMModel,
+			GenerationPlatform:     r.GenerationPlatform,
+			GenerationExternalID:   r.GenerationExternalID,
+			GenerationStatus:       r.GenerationStatus,
+			GenerationS3URL:        r.GenerationS3URL,
+			GenerationErrorMessage: r.GenerationErrorMessage,
 		})
 	}
 	q.enricher.Enrich(items)

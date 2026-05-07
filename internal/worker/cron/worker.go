@@ -5,6 +5,7 @@ import (
 	"log/slog"
 	"time"
 
+	"github.com/gkarman/demo/internal/application"
 	"github.com/gkarman/demo/internal/application/blogger/command"
 	"github.com/gkarman/demo/internal/infrastructure/repository/blogger"
 	sharedapify "github.com/gkarman/demo/internal/infrastructure/apify"
@@ -14,14 +15,22 @@ import (
 )
 
 type Worker struct {
-	log         *slog.Logger
-	db          *pgxpool.Pool
-	cron        *cron.Cron
-	ctx         context.Context
-	apifyClient *sharedapify.Client
+	log            *slog.Logger
+	db             *pgxpool.Pool
+	cron           *cron.Cron
+	ctx            context.Context
+	apifyClient    *sharedapify.Client
+	videoGenerator application.VideoGenerator
+	storage        application.Storage
 }
 
-func New(log *slog.Logger, db *pgxpool.Pool, apifyClient *sharedapify.Client) (*Worker, error) {
+func New(
+	log *slog.Logger,
+	db *pgxpool.Pool,
+	apifyClient *sharedapify.Client,
+	videoGenerator application.VideoGenerator,
+	storage application.Storage,
+) (*Worker, error) {
 	c := cron.New(
 		cron.WithLocation(time.Local),
 		cron.WithChain(
@@ -31,9 +40,12 @@ func New(log *slog.Logger, db *pgxpool.Pool, apifyClient *sharedapify.Client) (*
 	)
 
 	return &Worker{
-		log:  log,
-		db:   db,
-		cron: c,
+		log:            log,
+		db:             db,
+		cron:           c,
+		apifyClient:    apifyClient,
+		videoGenerator: videoGenerator,
+		storage:        storage,
 	}, nil
 }
 
@@ -52,9 +64,13 @@ func (w *Worker) Run(ctx context.Context) error {
 }
 
 func (w *Worker) registerJobs() error {
-	_, err := w.cron.AddFunc("0 3 * * *", w.refreshAllBloggers)
-
-	return err
+	if _, err := w.cron.AddFunc("0 3 * * *", w.refreshAllBloggers); err != nil {
+		return err
+	}
+	if _, err := w.cron.AddFunc("*/3 * * * *", w.pollVideoGenerations); err != nil {
+		return err
+	}
+	return nil
 }
 
 func (w *Worker) refreshAllBloggers() {
@@ -62,13 +78,18 @@ func (w *Worker) refreshAllBloggers() {
 	videoSearcher := apifysearcher.NewVideoSearcher(w.apifyClient)
 	fetchVideoCmd := command.NewFetchBloggerVideos(bloggerRepo, videoSearcher)
 
-	refreshCmd := command.NewRefreshAllBloggers(
-		bloggerRepo,
-		fetchVideoCmd,
-	)
+	refreshCmd := command.NewRefreshAllBloggers(bloggerRepo, fetchVideoCmd)
 
-	err := refreshCmd.Execute(w.ctx)
-	if err != nil {
+	if err := refreshCmd.Execute(w.ctx); err != nil {
 		w.log.Error("Failed to refresh all Bloggers.", err)
+	}
+}
+
+func (w *Worker) pollVideoGenerations() {
+	bloggerRepo := blogger.NewPostgres(w.db)
+	pollCmd := command.NewPollVideoGenerations(bloggerRepo, w.videoGenerator, w.storage)
+
+	if err := pollCmd.Execute(w.ctx); err != nil {
+		w.log.Error("Failed to poll video generations", "error", err)
 	}
 }

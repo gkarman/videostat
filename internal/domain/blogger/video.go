@@ -92,6 +92,13 @@ func (v *Video) AnalyzeDone() {
 	})
 }
 
+func (v *Video) PromptGenerated() {
+	v.addEvent(&VideoPromptGenerated{
+		VideoID: v.ID,
+		At:      time.Now(),
+	})
+}
+
 func (v *Video) MarkReady() error {
 	return v.ChangeStatus(VideoStatusReady)
 }
