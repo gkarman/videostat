@@ -99,6 +99,27 @@ func (v *Video) PromptGenerated() {
 	})
 }
 
+func (v *Video) MarkGenerationProcessing() error {
+	return v.ChangeStatus(VideoStatusGenerationProcessing)
+}
+
+func (v *Video) MarkForRegeneration() {
+	v.Status = VideoStatusGenerationProcessing
+	v.ErrorStage = nil
+	v.ErrorMessage = nil
+}
+
+func (v *Video) MarkGenerationFailed(err error) error {
+	if chErr := v.ChangeStatus(VideoStatusGenerationFailed); chErr != nil {
+		return chErr
+	}
+	stage := ErrorStageGeneration
+	v.ErrorStage = &stage
+	msg := err.Error()
+	v.ErrorMessage = &msg
+	return nil
+}
+
 func (v *Video) MarkReady() error {
 	return v.ChangeStatus(VideoStatusReady)
 }
@@ -119,7 +140,13 @@ func (v *Video) canChangeStatusTo(to VideoStatus) bool {
 		return to == VideoStatusProcessing || to == VideoStatusFailed
 
 	case VideoStatusProcessing:
-		return to == VideoStatusReady || to == VideoStatusFailed
+		return to == VideoStatusGenerationProcessing || to == VideoStatusFailed
+
+	case VideoStatusGenerationProcessing:
+		return to == VideoStatusReady || to == VideoStatusGenerationFailed || to == VideoStatusGenerationProcessing
+
+	case VideoStatusGenerationFailed:
+		return to == VideoStatusGenerationProcessing
 
 	case VideoStatusReady:
 		return false

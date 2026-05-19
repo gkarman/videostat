@@ -12,10 +12,10 @@ import (
 )
 
 type VideoAnalyzeDoneHandler struct {
-	command *command.GenerateVideoPrompt
+	command *command.SubmitVideoGeneration
 }
 
-func NewVideoAnalyzeDoneHandler(log *slog.Logger, command *command.GenerateVideoPrompt) *VideoAnalyzeDoneHandler {
+func NewVideoAnalyzeDoneHandler(log *slog.Logger, command *command.SubmitVideoGeneration) *VideoAnalyzeDoneHandler {
 	return &VideoAnalyzeDoneHandler{command: command}
 }
 
@@ -30,7 +30,7 @@ func (h *VideoAnalyzeDoneHandler) Handle(ctx context.Context, body []byte) error
 		return err
 	}
 
-	err := h.command.Run(ctx, reqdto.GenerateVideoPrompt{VideoID: evt.VideoID})
+	err := h.command.Run(ctx, reqdto.SubmitVideoGeneration{VideoID: evt.VideoID})
 	if err != nil {
 		log.Error("command error", "error", err)
 	}

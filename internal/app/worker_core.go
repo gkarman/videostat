@@ -48,16 +48,9 @@ func NewWorkerCore(ctx context.Context) (*core.Worker, error) {
 
 	apifyClient := platform.NewApifyClient(cfg)
 	analyzer := platform.NewAssemblyAIAnalyzer(cfg)
-
-	promptGenerator, err := platform.NewVideoPromptGenerator(cfg)
-	if err != nil {
-		db.Close()
-		return nil, fmt.Errorf("init prompt generator: %w", err)
-	}
-
 	videoGenerator := platform.NewHeyGenClient(cfg)
 
-	router := core.NewRouterWithHandlers(log, db, apifyClient, analyzer, promptGenerator, videoGenerator, publisher)
+	router := core.NewRouterWithHandlers(log, db, apifyClient, analyzer, videoGenerator, publisher)
 	worker := core.New(log, consumer, router)
 
 	return worker, nil

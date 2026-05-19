@@ -23,7 +23,6 @@ func NewRouterWithHandlers(
 	db *pgxpool.Pool,
 	apifyClient *sharedapify.Client,
 	analyzer application.VideoAnalyzer,
-	promptGenerator application.VideoPromptGenerator,
 	videoGenerator application.VideoGenerator,
 	publisher application.Publisher,
 ) *worker.Router {
@@ -34,7 +33,6 @@ func NewRouterWithHandlers(
 	disp := dispatcher.New()
 	disp.Register(&blogger.VideoSourceFound{}, blogger_handlers.VideoSourceFoundToRabbitHandler(publisher, log))
 	disp.Register(&blogger.VideoAnalyzeDone{}, blogger_handlers.VideoAnalyzeDoneToRabbitHandler(publisher, log))
-	disp.Register(&blogger.VideoPromptGenerated{}, blogger_handlers.VideoPromptGeneratedToRabbitHandler(publisher, log))
 
 	vSearcher := apifysearcher.NewVideoSearcher(apifyClient)
 	cmdFVideos := command.NewFetchBloggerVideos(bRepo, vSearcher)
@@ -43,19 +41,16 @@ func NewRouterWithHandlers(
 	cmdFSources := command.NewFetchVideoSources(bRepo, vSourceSearcher, disp)
 
 	cmdAnalyze := command.NewAnalyzeVideo(bRepo, analyzer, disp)
-	cmdGeneratePrompt := command.NewGenerateVideoPrompt(bRepo, promptGenerator, disp)
 	cmdSubmitGeneration := command.NewSubmitVideoGeneration(bRepo, videoGenerator)
 
 	bloggerCreatedHandler := handlers.NewBloggerCreatedHandler(log, cmdFVideos)
 	videoProcessingStartedHandler := handlers.NewVideoProcessingStarted(log, cmdFSources)
 	videoSourceFoundHandler := handlers.NewVideoSourceFoundHandler(log, cmdAnalyze)
-	videoAnalyzeDoneHandler := handlers.NewVideoAnalyzeDoneHandler(log, cmdGeneratePrompt)
-	videoPromptGeneratedHandler := handlers.NewVideoPromptGeneratedHandler(log, cmdSubmitGeneration)
+	videoAnalyzeDoneHandler := handlers.NewVideoAnalyzeDoneHandler(log, cmdSubmitGeneration)
 
 	r.Register(events.EventBloggerCreatedV1, bloggerCreatedHandler.Handle)
 	r.Register(events.EventVideoProcessingStartedV1, videoProcessingStartedHandler.Handle)
 	r.Register(events.EventVideoSourceFoundV1, videoSourceFoundHandler.Handle)
 	r.Register(events.EventVideoAnalyzeDoneV1, videoAnalyzeDoneHandler.Handle)
-	r.Register(events.EventVideoPromptGeneratedV1, videoPromptGeneratedHandler.Handle)
 	return r
 }

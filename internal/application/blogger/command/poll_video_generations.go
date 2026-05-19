@@ -1,6 +1,7 @@
 package command
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 	"io"
@@ -51,6 +52,11 @@ func (c *PollVideoGenerations) poll(ctx context.Context, vg *blogger.VideoGenera
 		return fmt.Errorf("get status: %w", err)
 	}
 
+	v, err := c.r.GetVideoByID(ctx, vg.VideoID)
+	if err != nil {
+		return fmt.Errorf("get video: %w", err)
+	}
+
 	switch status.Status {
 	case "completed":
 		s3URL, err := c.downloadAndUpload(ctx, vg, status.VideoURL)
@@ -60,12 +66,18 @@ func (c *PollVideoGenerations) poll(ctx context.Context, vg *blogger.VideoGenera
 		vg.Status = blogger.VideoGenerationCompleted
 		vg.S3URL = s3URL
 		vg.UpdatedAt = time.Now()
+		if err = v.MarkReady(); err != nil {
+			return fmt.Errorf("mark ready: %w", err)
+		}
 		log.Info("generation completed", "s3URL", s3URL)
 
 	case "failed":
 		vg.Status = blogger.VideoGenerationFailed
 		vg.ErrorMessage = status.ErrorMessage
 		vg.UpdatedAt = time.Now()
+		if err = v.MarkGenerationFailed(fmt.Errorf("%s", status.ErrorMessage)); err != nil {
+			return fmt.Errorf("mark generation failed: %w", err)
+		}
 		log.Warn("generation failed", "reason", status.ErrorMessage)
 
 	case "processing":
@@ -80,6 +92,10 @@ func (c *PollVideoGenerations) poll(ctx context.Context, vg *blogger.VideoGenera
 
 	if err := c.r.UpdateVideoGeneration(ctx, vg); err != nil {
 		return fmt.Errorf("update video generation: %w", err)
+	}
+
+	if err := c.r.UpdateVideoState(ctx, v); err != nil {
+		return fmt.Errorf("update video state: %w", err)
 	}
 
 	return nil
@@ -97,11 +113,15 @@ func (c *PollVideoGenerations) downloadAndUpload(ctx context.Context, vg *blogge
 	}
 	defer resp.Body.Close()
 
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return "", fmt.Errorf("read video body: %w", err)
+	}
+
 	if resp.StatusCode >= 300 {
-		body, _ := io.ReadAll(resp.Body)
 		return "", fmt.Errorf("download error %d: %s", resp.StatusCode, body)
 	}
 
 	key := fmt.Sprintf("videos/%s/%s.mp4", vg.VideoID, vg.ExternalID)
-	return c.storage.Upload(ctx, key, resp.Body, "video/mp4")
+	return c.storage.Upload(ctx, key, bytes.NewReader(body), "video/mp4")
 }

@@ -3,10 +3,12 @@ package blogger
 type VideoStatus string
 
 const (
-	VideoStatusCreated    VideoStatus = "created"
-	VideoStatusProcessing VideoStatus = "processing"
-	VideoStatusReady      VideoStatus = "ready"
-	VideoStatusFailed     VideoStatus = "failed"
+	VideoStatusCreated              VideoStatus = "created"
+	VideoStatusProcessing           VideoStatus = "processing"
+	VideoStatusGenerationProcessing VideoStatus = "generation_processing"
+	VideoStatusGenerationFailed     VideoStatus = "generation_failed"
+	VideoStatusReady                VideoStatus = "ready"
+	VideoStatusFailed               VideoStatus = "failed"
 )
 
 func (s VideoStatus) IsValid() bool {
@@ -14,6 +16,8 @@ func (s VideoStatus) IsValid() bool {
 	case
 		VideoStatusCreated,
 		VideoStatusProcessing,
+		VideoStatusGenerationProcessing,
+		VideoStatusGenerationFailed,
 		VideoStatusReady,
 		VideoStatusFailed:
 		return true
