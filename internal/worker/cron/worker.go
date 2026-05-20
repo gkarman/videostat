@@ -7,8 +7,11 @@ import (
 
 	"github.com/gkarman/demo/internal/application"
 	"github.com/gkarman/demo/internal/application/blogger/command"
-	"github.com/gkarman/demo/internal/infrastructure/repository/blogger"
+	bloggerHandlers "github.com/gkarman/demo/internal/application/blogger/handlers"
+	bloggerDomain "github.com/gkarman/demo/internal/domain/blogger"
 	sharedapify "github.com/gkarman/demo/internal/infrastructure/apify"
+	"github.com/gkarman/demo/internal/infrastructure/dispatcher"
+	"github.com/gkarman/demo/internal/infrastructure/repository/blogger"
 	apifysearcher "github.com/gkarman/demo/internal/infrastructure/videosearcher/apify"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/robfig/cron/v3"
@@ -22,6 +25,7 @@ type Worker struct {
 	apifyClient    *sharedapify.Client
 	videoGenerator application.VideoGenerator
 	storage        application.Storage
+	publisher      application.Publisher
 }
 
 func New(
@@ -30,6 +34,7 @@ func New(
 	apifyClient *sharedapify.Client,
 	videoGenerator application.VideoGenerator,
 	storage application.Storage,
+	publisher application.Publisher,
 ) (*Worker, error) {
 	c := cron.New(
 		cron.WithLocation(time.Local),
@@ -46,6 +51,7 @@ func New(
 		apifyClient:    apifyClient,
 		videoGenerator: videoGenerator,
 		storage:        storage,
+		publisher:      publisher,
 	}, nil
 }
 
@@ -87,7 +93,12 @@ func (w *Worker) refreshAllBloggers() {
 
 func (w *Worker) pollVideoGenerations() {
 	bloggerRepo := blogger.NewPostgres(w.db)
-	pollCmd := command.NewPollVideoGenerations(bloggerRepo, w.videoGenerator, w.storage)
+
+	disp := dispatcher.New()
+	disp.Register(&bloggerDomain.VideoGenerationDone{}, bloggerHandlers.VideoGenerationDoneToRabbitHandler(w.publisher, w.log))
+	disp.Register(&bloggerDomain.VideoGenerationError{}, bloggerHandlers.VideoGenerationErrorToRabbitHandler(w.publisher, w.log))
+
+	pollCmd := command.NewPollVideoGenerations(bloggerRepo, w.videoGenerator, w.storage, disp)
 
 	if err := pollCmd.Execute(w.ctx); err != nil {
 		w.log.Error("Failed to poll video generations", "error", err)

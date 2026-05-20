@@ -434,3 +434,37 @@ func scanVideo(row pgx.Row) (*blogger.Video, error) {
 
 	return &v, nil
 }
+func (r *PostgresRepo) SaveVideoWatcher(ctx context.Context, w *blogger.VideoWatcher) error {
+	const q = `
+		INSERT INTO video_watchers (id, video_id, chat_id, created_at)
+		VALUES ($1, $2, $3, $4)
+	`
+	_, err := r.db.Exec(ctx, q, w.ID, w.VideoID, w.ChatID, w.CreatedAt)
+	if err != nil {
+		return fmt.Errorf("save video watcher: %w", err)
+	}
+	return nil
+}
+
+func (r *PostgresRepo) ListVideoWatchers(ctx context.Context, videoID string) ([]*blogger.VideoWatcher, error) {
+	const q = `
+		SELECT id, video_id, chat_id, created_at
+		FROM video_watchers
+		WHERE video_id = $1
+	`
+	rows, err := r.db.Query(ctx, q, videoID)
+	if err != nil {
+		return nil, fmt.Errorf("list video watchers: %w", err)
+	}
+	defer rows.Close()
+
+	var result []*blogger.VideoWatcher
+	for rows.Next() {
+		var w blogger.VideoWatcher
+		if err := rows.Scan(&w.ID, &w.VideoID, &w.ChatID, &w.CreatedAt); err != nil {
+			return nil, fmt.Errorf("scan video watcher: %w", err)
+		}
+		result = append(result, &w)
+	}
+	return result, rows.Err()
+}

@@ -33,7 +33,13 @@ func NewWorkerCron(ctx context.Context) (*cronworker.Worker, error) {
 		return nil, fmt.Errorf("init s3 client: %w", err)
 	}
 
-	worker, err := cronworker.New(log, db, apifyClient, videoGenerator, s3Client)
+	publisher, err := platform.NewRabbitPublisher(cfg)
+	if err != nil {
+		db.Close()
+		return nil, fmt.Errorf("init rabbit publisher: %w", err)
+	}
+
+	worker, err := cronworker.New(log, db, apifyClient, videoGenerator, s3Client, publisher)
 	if err != nil {
 		return nil, fmt.Errorf("create worker cron: %w", err)
 	}

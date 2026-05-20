@@ -1,5 +1,6 @@
 package reqdto
 
 type StartProcessVideo struct {
-	URL string
+	URL    string
+	ChatID int64
 }

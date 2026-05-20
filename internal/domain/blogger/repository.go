@@ -23,4 +23,6 @@ type Repo interface {
 	GetVideoGenerationByExternalID(ctx context.Context, externalID string) (*VideoGeneration, error)
 	ListPendingVideoGenerations(ctx context.Context) ([]*VideoGeneration, error)
 	UpdateVideoGeneration(ctx context.Context, vg *VideoGeneration) error
+	SaveVideoWatcher(ctx context.Context, w *VideoWatcher) error
+	ListVideoWatchers(ctx context.Context, videoID string) ([]*VideoWatcher, error)
 }

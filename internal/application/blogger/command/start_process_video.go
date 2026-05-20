@@ -3,11 +3,13 @@ package command
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"github.com/gkarman/demo/internal/application"
 	"github.com/gkarman/demo/internal/application/blogger/command/reqdto"
 	"github.com/gkarman/demo/internal/application/blogger/command/respdto"
 	"github.com/gkarman/demo/internal/domain/blogger"
+	"github.com/google/uuid"
 )
 
 type StartProcessVideo struct {
@@ -26,6 +28,18 @@ func (c *StartProcessVideo) Run(ctx context.Context, req reqdto.StartProcessVide
 	v, err := c.repo.GetVideoByUrl(ctx, req.URL)
 	if err != nil {
 		return respdto.StartProcessVideo{}, fmt.Errorf("get video by url: %w", err)
+	}
+
+	if req.ChatID != 0 {
+		w := &blogger.VideoWatcher{
+			ID:        uuid.NewString(),
+			VideoID:   v.ID,
+			ChatID:    req.ChatID,
+			CreatedAt: time.Now(),
+		}
+		if err = c.repo.SaveVideoWatcher(ctx, w); err != nil {
+			return respdto.StartProcessVideo{}, fmt.Errorf("save video watcher: %w", err)
+		}
 	}
 
 	_, err = c.repo.GetVideoAnalysisByVideoID(ctx, v.ID)

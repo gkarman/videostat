@@ -240,3 +240,11 @@ func (r *InMemoryRepo) UpdateVideoGeneration(_ context.Context, vg *blogger.Vide
 	}
 	return blogger.ErrVideoNotFound
 }
+
+func (r *InMemoryRepo) SaveVideoWatcher(_ context.Context, w *blogger.VideoWatcher) error {
+	return nil
+}
+
+func (r *InMemoryRepo) ListVideoWatchers(_ context.Context, videoID string) ([]*blogger.VideoWatcher, error) {
+	return nil, nil
+}

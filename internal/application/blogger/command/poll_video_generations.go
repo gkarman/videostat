@@ -17,10 +17,11 @@ type PollVideoGenerations struct {
 	r       blogger.Repo
 	g       application.VideoGenerator
 	storage application.Storage
+	d       application.Dispatcher
 }
 
-func NewPollVideoGenerations(r blogger.Repo, g application.VideoGenerator, storage application.Storage) *PollVideoGenerations {
-	return &PollVideoGenerations{r: r, g: g, storage: storage}
+func NewPollVideoGenerations(r blogger.Repo, g application.VideoGenerator, storage application.Storage, d application.Dispatcher) *PollVideoGenerations {
+	return &PollVideoGenerations{r: r, g: g, storage: storage, d: d}
 }
 
 func (c *PollVideoGenerations) Execute(ctx context.Context) error {
@@ -69,6 +70,9 @@ func (c *PollVideoGenerations) poll(ctx context.Context, vg *blogger.VideoGenera
 		if err = v.MarkReady(); err != nil {
 			return fmt.Errorf("mark ready: %w", err)
 		}
+		c.dispatchToWatchers(ctx, vg.VideoID, func(chatID int64) any {
+			return &blogger.VideoGenerationDone{VideoID: vg.VideoID, S3URL: s3URL, ChatID: chatID, At: time.Now()}
+		})
 		log.Info("generation completed", "s3URL", s3URL)
 
 	case "failed":
@@ -78,6 +82,9 @@ func (c *PollVideoGenerations) poll(ctx context.Context, vg *blogger.VideoGenera
 		if err = v.MarkGenerationFailed(fmt.Errorf("%s", status.ErrorMessage)); err != nil {
 			return fmt.Errorf("mark generation failed: %w", err)
 		}
+		c.dispatchToWatchers(ctx, vg.VideoID, func(chatID int64) any {
+			return &blogger.VideoGenerationError{VideoID: vg.VideoID, Reason: status.ErrorMessage, ChatID: chatID, At: time.Now()}
+		})
 		log.Warn("generation failed", "reason", status.ErrorMessage)
 
 	case "processing":
@@ -99,6 +106,18 @@ func (c *PollVideoGenerations) poll(ctx context.Context, vg *blogger.VideoGenera
 	}
 
 	return nil
+}
+
+func (c *PollVideoGenerations) dispatchToWatchers(ctx context.Context, videoID string, makeEvent func(chatID int64) any) {
+	watchers, err := c.r.ListVideoWatchers(ctx, videoID)
+	if err != nil || len(watchers) == 0 {
+		return
+	}
+	events := make([]any, 0, len(watchers))
+	for _, w := range watchers {
+		events = append(events, makeEvent(w.ChatID))
+	}
+	c.d.Dispatch(ctx, events)
 }
 
 func (c *PollVideoGenerations) downloadAndUpload(ctx context.Context, vg *blogger.VideoGeneration, videoURL string) (string, error) {

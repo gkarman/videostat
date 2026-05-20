@@ -73,6 +73,7 @@ type MailConfig struct {
 
 type TelegramBotConfig struct {
 	Token   string `env:"TELEGRAM_BOT_TOKEN" env-default:""`
+	ChatID  int64  `env:"TELEGRAM_BOT_CHAT_ID" env-default:"0"`
 	Debug   bool   `env:"TELEGRAM_BOT_DEBUG" env-default:"false"`
 	Timeout int    `env:"TELEGRAM_BOT_TIMEOUT" env-default:"60"`
 }

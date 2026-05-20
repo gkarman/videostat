@@ -26,7 +26,8 @@ func (r *Router) handleFSM(ctx context.Context, msg *tgbotapi.Message) bool {
 	if st.WaitingVideoURL {
 		videoURL := msg.Text
 		resp, err := r.startProcessVideo.Run(ctx, reqdto.StartProcessVideo{
-			URL: videoURL,
+			URL:    videoURL,
+			ChatID: msg.Chat.ID,
 		})
 		if err != nil {
 			r.log.Error("telegram request failed", "err", err, "url", videoURL)

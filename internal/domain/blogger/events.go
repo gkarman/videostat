@@ -36,3 +36,17 @@ type VideoPromptGenerated struct {
 	VideoID string
 	At      time.Time
 }
+
+type VideoGenerationDone struct {
+	VideoID string
+	ChatID  int64
+	S3URL   string
+	At      time.Time
+}
+
+type VideoGenerationError struct {
+	VideoID string
+	ChatID  int64
+	Reason  string
+	At      time.Time
+}
