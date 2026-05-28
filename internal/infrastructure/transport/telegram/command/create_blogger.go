@@ -25,6 +25,26 @@ func (r *Router) handleFSM(ctx context.Context, msg *tgbotapi.Message) bool {
 
 	if st.WaitingVideoURL {
 		videoURL := msg.Text
+		video, err := r.startProcessVideo.GetVideoByURL(ctx, videoURL)
+		if err != nil {
+			r.log.Error("get video by url", "err", err, "url", videoURL)
+			r.send(msg.Chat.ID, fmt.Sprintf("Ошибка: %v", err))
+			return true
+		}
+
+		if video.HasBeenProcessed {
+			r.state.Set(msg.Chat.ID, &userState{
+				WaitingConfirmRegenerate: true,
+				PendingVideoURL:          videoURL,
+				PendingVideoID:           video.ID,
+			})
+			r.sendWithKeyboard(msg.Chat.ID,
+				"Для этого видео уже была запущена генерация. Хотите переделать?",
+				r.ui.ConfirmRegenerateKeyboard(),
+			)
+			return true
+		}
+
 		resp, err := r.startProcessVideo.Run(ctx, reqdto.StartProcessVideo{
 			URL:    videoURL,
 			ChatID: msg.Chat.ID,
@@ -86,5 +106,31 @@ func (r *Router) handleCallback(ctx context.Context, q *tgbotapi.CallbackQuery) 
 			WaitingVideoURL: true,
 		})
 		r.send(q.Message.Chat.ID, "Пришли ссылку на видео")
+
+	case q.Data == "regen_yes":
+		st, ok := r.state.Get(q.Message.Chat.ID)
+		if !ok || !st.WaitingConfirmRegenerate {
+			return
+		}
+		if err := r.resetVideoProcess.Run(ctx, st.PendingVideoID); err != nil {
+			r.log.Error("reset video process", "err", err)
+			r.send(q.Message.Chat.ID, fmt.Sprintf("Ошибка сброса: %v", err))
+			return
+		}
+		resp, err := r.startProcessVideo.Run(ctx, reqdto.StartProcessVideo{
+			URL:    st.PendingVideoURL,
+			ChatID: q.Message.Chat.ID,
+		})
+		if err != nil {
+			r.log.Error("start process video after reset", "err", err)
+			r.send(q.Message.Chat.ID, fmt.Sprintf("Ошибка: %v", err))
+			return
+		}
+		r.state.Clear(q.Message.Chat.ID)
+		r.send(q.Message.Chat.ID, resp.Message)
+
+	case q.Data == "regen_no":
+		r.state.Clear(q.Message.Chat.ID)
+		r.send(q.Message.Chat.ID, "Отменено")
 	}
 }

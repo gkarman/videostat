@@ -37,6 +37,7 @@ func NewTelegramBot(log *slog.Logger, cfg *config.Config, db *pgxpool.Pool, d *d
 	listVideosQuery := query.NewListVideos(repoBloggerRead, enricher)
 
 	startProcessVideoCmd := command.NewStartProcessVideo(repoBlogger, d)
+	resetVideoProcessCmd := command.NewResetVideoProcess(repoBlogger)
 
 	bot, err := telegram.NewBot(telegramCfg, log)
 	if err != nil {
@@ -50,6 +51,7 @@ func NewTelegramBot(log *slog.Logger, cfg *config.Config, db *pgxpool.Pool, d *d
 		listBloggersQuery,
 		listVideosQuery,
 		startProcessVideoCmd,
+		resetVideoProcessCmd,
 	)
 
 	bot.SetHandler(router)

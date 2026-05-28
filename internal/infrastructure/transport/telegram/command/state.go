@@ -3,9 +3,12 @@ package command
 import "sync"
 
 type userState struct {
-	PlatformName string
-	WaitingURL   bool
-	WaitingVideoURL bool
+	PlatformName             string
+	WaitingURL               bool
+	WaitingVideoURL          bool
+	WaitingConfirmRegenerate bool
+	PendingVideoURL          string
+	PendingVideoID           string
 }
 
 type State struct {

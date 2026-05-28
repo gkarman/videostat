@@ -24,6 +24,23 @@ func NewStartProcessVideo(r blogger.Repo, d application.Dispatcher) *StartProces
 	}
 }
 
+type VideoCheckResult struct {
+	ID               string
+	HasBeenProcessed bool
+}
+
+func (c *StartProcessVideo) GetVideoByURL(ctx context.Context, url string) (*VideoCheckResult, error) {
+	v, err := c.repo.GetVideoByUrl(ctx, url)
+	if err != nil {
+		return nil, fmt.Errorf("get video by url: %w", err)
+	}
+	_, analysisErr := c.repo.GetVideoAnalysisByVideoID(ctx, v.ID)
+	return &VideoCheckResult{
+		ID:               v.ID,
+		HasBeenProcessed: analysisErr == nil,
+	}, nil
+}
+
 func (c *StartProcessVideo) Run(ctx context.Context, req reqdto.StartProcessVideo) (respdto.StartProcessVideo, error) {
 	v, err := c.repo.GetVideoByUrl(ctx, req.URL)
 	if err != nil {
@@ -31,14 +48,20 @@ func (c *StartProcessVideo) Run(ctx context.Context, req reqdto.StartProcessVide
 	}
 
 	if req.ChatID != 0 {
-		w := &blogger.VideoWatcher{
-			ID:        uuid.NewString(),
-			VideoID:   v.ID,
-			ChatID:    req.ChatID,
-			CreatedAt: time.Now(),
+		exists, err := c.repo.ExistsVideoWatcher(ctx, v.ID, req.ChatID)
+		if err != nil {
+			return respdto.StartProcessVideo{}, fmt.Errorf("check video watcher: %w", err)
 		}
-		if err = c.repo.SaveVideoWatcher(ctx, w); err != nil {
-			return respdto.StartProcessVideo{}, fmt.Errorf("save video watcher: %w", err)
+		if !exists {
+			w := &blogger.VideoWatcher{
+				ID:        uuid.NewString(),
+				VideoID:   v.ID,
+				ChatID:    req.ChatID,
+				CreatedAt: time.Now(),
+			}
+			if err = c.repo.SaveVideoWatcher(ctx, w); err != nil {
+				return respdto.StartProcessVideo{}, fmt.Errorf("save video watcher: %w", err)
+			}
 		}
 	}
 

@@ -288,3 +288,15 @@ func (r *InMemoryRepo) UpdateVideoComposition(_ context.Context, c *blogger.Vide
 func (r *InMemoryRepo) ListProcessingCompositions(_ context.Context) ([]*blogger.VideoComposition, error) {
 	return nil, nil
 }
+
+func (r *InMemoryRepo) DeleteBrollSegmentsByVideoID(_ context.Context, _ string) error { return nil }
+func (r *InMemoryRepo) DeleteCompositionsByVideoID(_ context.Context, _ string) error  { return nil }
+func (r *InMemoryRepo) DeleteVideoGenerationsByVideoID(_ context.Context, _ string) error {
+	return nil
+}
+
+func (r *InMemoryRepo) DeleteVideoWatchersByVideoID(_ context.Context, _ string) error { return nil }
+
+func (r *InMemoryRepo) ExistsVideoWatcher(_ context.Context, _ string, _ int64) (bool, error) {
+	return false, nil
+}

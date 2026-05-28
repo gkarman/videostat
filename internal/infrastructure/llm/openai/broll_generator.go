@@ -7,19 +7,36 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/gkarman/demo/internal/domain/blogger"
 	"github.com/google/uuid"
 )
 
-const brollSystemPrompt = `You are a video producer. Given a transcript with word-level millisecond timestamps, split the words into semantic segments of approximately 5-8 seconds each. For each segment produce:
-- start_ms: start timestamp (ms) of the first word
-- end_ms: end timestamp (ms) of the last word
-- text: the words of this segment joined with spaces
-- broll_prompt: a short English prompt (max 15 words) for generating a relevant background B-roll video clip
+const brollSystemPrompt = `You are a viral TikTok/Reels video editor. You will receive pre-split transcript segments with exact timestamps. Your ONLY job is to write a broll_prompt for each segment.
 
-Return ONLY a valid JSON object in this exact format: {"segments": [...]}`
+For each segment write an energetic B-roll prompt (40-60 words):
+
+ENERGY & PACE:
+- NO slow motion, NO slow dolly, NO peaceful scenes
+- Every shot MUST have FAST movement: "quick whip pan", "rapid zoom in", "fast handheld shaky", "urgent tracking shot"
+- Music video energy, not documentary
+- PATTERN INTERRUPTS: alternate extreme close-up, wide, POV, overhead — never two similar shots in a row
+- FIRST SEGMENT: most visually shocking or unexpected angle to stop the scroll instantly
+
+MODERN AMERICAN SETTING (strictly required):
+- Contemporary USA 2020s: modern iPhones, current-model cars, up-to-date interiors
+- NO vintage/retro, NO 80s/90s props, NO Asian characters/text on screen
+- All visible text/signs in English, American settings
+
+TECHNICAL:
+- Lighting: specific ("harsh fluorescent overhead", "cold blue neon glow", "warm backlit golden")
+- Style: "hyper-realistic 4K", "high-energy handheld"
+- NO subtitles, NO captions, NO watermarks, NO Chinese characters
+- All segments form one cohesive visual story
+
+Return ONLY valid JSON: {"segments": [{"start_ms": int, "end_ms": int, "text": "...", "broll_prompt": "..."}]}`
 
 type BrollGenerator struct {
 	apiKey string
@@ -36,23 +53,30 @@ func NewBrollGenerator(apiKey, model string) *BrollGenerator {
 }
 
 func (g *BrollGenerator) GenerateSegments(ctx context.Context, rawPayload []byte) ([]*blogger.BrollSegment, error) {
-	words, err := extractWords(rawPayload)
+	transcript, words, err := extractWords(rawPayload)
 	if err != nil {
 		return nil, fmt.Errorf("extract words: %w", err)
 	}
 
-	wordsJSON, err := json.Marshal(words)
-	if err != nil {
-		return nil, fmt.Errorf("marshal words: %w", err)
+	segments := splitIntoSegments(words, 3000)
+	if len(segments) == 0 {
+		return nil, fmt.Errorf("no segments after split")
 	}
+
+	segJSON, err := json.Marshal(segments)
+	if err != nil {
+		return nil, fmt.Errorf("marshal segments: %w", err)
+	}
+
+	userMsg := fmt.Sprintf("FULL TRANSCRIPT:\n%s\n\nSEGMENTS (write broll_prompt for each):\n%s", transcript, string(segJSON))
 
 	body, err := json.Marshal(map[string]any{
 		"model": g.model,
 		"messages": []map[string]string{
 			{"role": "system", "content": brollSystemPrompt},
-			{"role": "user", "content": string(wordsJSON)},
+			{"role": "user", "content": userMsg},
 		},
-		"max_tokens":      2048,
+		"max_tokens":      4096,
 		"response_format": map[string]string{"type": "json_object"},
 	})
 	if err != nil {
@@ -106,11 +130,10 @@ func (g *BrollGenerator) GenerateSegments(ctx context.Context, rawPayload []byte
 	if err := json.Unmarshal([]byte(result.Choices[0].Message.Content), &parsed); err != nil {
 		return nil, fmt.Errorf("parse segments json: %w", err)
 	}
-	raw := parsed.Segments
 
-	segments := make([]*blogger.BrollSegment, 0, len(raw))
-	for i, s := range raw {
-		segments = append(segments, &blogger.BrollSegment{
+	result2 := make([]*blogger.BrollSegment, 0, len(parsed.Segments))
+	for i, s := range parsed.Segments {
+		result2 = append(result2, &blogger.BrollSegment{
 			ID:          uuid.NewString(),
 			Position:    i,
 			StartMS:     s.StartMS,
@@ -121,19 +144,59 @@ func (g *BrollGenerator) GenerateSegments(ctx context.Context, rawPayload []byte
 		})
 	}
 
-	return segments, nil
+	return result2, nil
 }
 
-func extractWords(rawPayload []byte) (any, error) {
+type word struct {
+	Text  string `json:"text"`
+	Start int    `json:"start"`
+	End   int    `json:"end"`
+}
+
+type segment struct {
+	StartMS int    `json:"start_ms"`
+	EndMS   int    `json:"end_ms"`
+	Text    string `json:"text"`
+}
+
+// splitIntoSegments splits words into segments of ~targetMS milliseconds each.
+func splitIntoSegments(words []word, targetMS int) []segment {
+	if len(words) == 0 {
+		return nil
+	}
+
+	var segments []segment
+	segStart := words[0].Start
+	var texts []string
+
+	for i, w := range words {
+		texts = append(texts, w.Text)
+		duration := w.End - segStart
+
+		isLast := i == len(words)-1
+		if duration >= targetMS || isLast {
+			segments = append(segments, segment{
+				StartMS: segStart,
+				EndMS:   w.End,
+				Text:    strings.Join(texts, " "),
+			})
+			if !isLast {
+				segStart = words[i+1].Start
+				texts = nil
+			}
+		}
+	}
+
+	return segments
+}
+
+func extractWords(rawPayload []byte) (string, []word, error) {
 	var payload struct {
-		Words []struct {
-			Text  string `json:"text"`
-			Start int    `json:"start"`
-			End   int    `json:"end"`
-		} `json:"words"`
+		Text  string `json:"text"`
+		Words []word `json:"words"`
 	}
 	if err := json.Unmarshal(rawPayload, &payload); err != nil {
-		return nil, err
+		return "", nil, err
 	}
-	return payload.Words, nil
+	return payload.Text, payload.Words, nil
 }

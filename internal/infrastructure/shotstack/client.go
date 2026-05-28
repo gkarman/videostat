@@ -141,13 +141,13 @@ func (c *Client) buildTimeline(req application.CompositionRequest) map[string]an
 		})
 	}
 
-	// Track 1: Avatar video (PiP, bottom-center, 50% width)
+	// Track 1: Avatar video (PiP, bottom-center, 30% width)
 	avatarClip := map[string]any{
 		"asset":    map[string]any{"type": "video", "src": req.AvatarURL},
 		"start":    0,
 		"length":   req.TotalSec,
 		"position": "bottom",
-		"scale":    0.3,
+		"scale":    1.27,
 	}
 
 	return map[string]any{

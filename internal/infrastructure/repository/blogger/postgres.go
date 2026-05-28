@@ -434,6 +434,15 @@ func scanVideo(row pgx.Row) (*blogger.Video, error) {
 
 	return &v, nil
 }
+func (r *PostgresRepo) ExistsVideoWatcher(ctx context.Context, videoID string, chatID int64) (bool, error) {
+	var exists bool
+	err := r.db.QueryRow(ctx,
+		`SELECT EXISTS(SELECT 1 FROM video_watchers WHERE video_id = $1 AND chat_id = $2)`,
+		videoID, chatID,
+	).Scan(&exists)
+	return exists, err
+}
+
 func (r *PostgresRepo) SaveVideoWatcher(ctx context.Context, w *blogger.VideoWatcher) error {
 	const q = `
 		INSERT INTO video_watchers (id, video_id, chat_id, created_at)
@@ -662,4 +671,24 @@ func scanBrollSegment(row interface{ Scan(...any) error }) (*blogger.BrollSegmen
 		return nil, fmt.Errorf("scan broll segment: %w", err)
 	}
 	return &s, nil
+}
+
+func (r *PostgresRepo) DeleteBrollSegmentsByVideoID(ctx context.Context, videoID string) error {
+	_, err := r.db.Exec(ctx, `DELETE FROM video_broll_segments WHERE video_id = $1`, videoID)
+	return err
+}
+
+func (r *PostgresRepo) DeleteCompositionsByVideoID(ctx context.Context, videoID string) error {
+	_, err := r.db.Exec(ctx, `DELETE FROM video_compositions WHERE video_id = $1`, videoID)
+	return err
+}
+
+func (r *PostgresRepo) DeleteVideoGenerationsByVideoID(ctx context.Context, videoID string) error {
+	_, err := r.db.Exec(ctx, `DELETE FROM video_generations WHERE video_id = $1`, videoID)
+	return err
+}
+
+func (r *PostgresRepo) DeleteVideoWatchersByVideoID(ctx context.Context, videoID string) error {
+	_, err := r.db.Exec(ctx, `DELETE FROM video_watchers WHERE video_id = $1`, videoID)
+	return err
 }

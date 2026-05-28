@@ -18,6 +18,15 @@ func (u *UI) PlatformKeyboard() tgbotapi.InlineKeyboardMarkup {
 	)
 }
 
+func (u *UI) ConfirmRegenerateKeyboard() tgbotapi.InlineKeyboardMarkup {
+	return tgbotapi.NewInlineKeyboardMarkup(
+		tgbotapi.NewInlineKeyboardRow(
+			tgbotapi.NewInlineKeyboardButtonData("✅ Да, перегенерировать", "regen_yes"),
+			tgbotapi.NewInlineKeyboardButtonData("❌ Отмена", "regen_no"),
+		),
+	)
+}
+
 func (u *UI) StartKeyboard() tgbotapi.InlineKeyboardMarkup {
 	return tgbotapi.NewInlineKeyboardMarkup(
 		tgbotapi.NewInlineKeyboardRow(

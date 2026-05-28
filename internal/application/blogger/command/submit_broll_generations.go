@@ -3,6 +3,8 @@ package command
 import (
 	"context"
 	"fmt"
+	"strings"
+	"time"
 
 	"github.com/gkarman/demo/internal/application"
 	"github.com/gkarman/demo/internal/application/blogger/command/reqdto"
@@ -32,6 +34,10 @@ func (c *SubmitBrollGenerations) Run(ctx context.Context, req reqdto.SubmitBroll
 
 		externalID, err := c.gen.Submit(ctx, s.BrollPrompt, durationSec)
 		if err != nil {
+			if strings.Contains(err.Error(), "1303") || strings.Contains(err.Error(), "429") {
+				// rate limit — leave as pending, next cron will retry
+				break
+			}
 			s.GenerationStatus = blogger.BrollStatusFailed
 			errMsg := err.Error()
 			s.GenerationError = &errMsg
@@ -43,6 +49,8 @@ func (c *SubmitBrollGenerations) Run(ctx context.Context, req reqdto.SubmitBroll
 		if err := c.repo.UpdateBrollSegment(ctx, s); err != nil {
 			return fmt.Errorf("update broll segment %s: %w", s.ID, err)
 		}
+
+		time.Sleep(2 * time.Second)
 	}
 
 	return nil

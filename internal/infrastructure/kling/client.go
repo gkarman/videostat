@@ -36,10 +36,11 @@ func NewClient(accessKeyID, secretKey, model string) *Client {
 
 func (c *Client) Submit(ctx context.Context, prompt string, durationSec int) (string, error) {
 	body, err := json.Marshal(map[string]any{
-		"model_name":   c.model,
-		"prompt":       prompt,
-		"duration":     fmt.Sprintf("%d", durationSec),
-		"aspect_ratio": "16:9",
+		"model_name":      c.model,
+		"prompt":          prompt,
+		"negative_prompt": "Chinese text, subtitles, captions, watermark, text overlay, Asian characters, hanzi, kanji",
+		"duration":        fmt.Sprintf("%d", durationSec),
+		"aspect_ratio":    "9:16",
 	})
 	if err != nil {
 		return "", fmt.Errorf("marshal request: %w", err)

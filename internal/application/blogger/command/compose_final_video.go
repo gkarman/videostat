@@ -2,6 +2,7 @@ package command
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"time"
 
@@ -10,6 +11,8 @@ import (
 	"github.com/gkarman/demo/internal/domain/blogger"
 	"github.com/google/uuid"
 )
+
+var ErrAvatarNotReady = errors.New("avatar video not ready yet")
 
 type ComposeFinalVideo struct {
 	repo     blogger.Repo
@@ -25,6 +28,9 @@ func (c *ComposeFinalVideo) Run(ctx context.Context, req reqdto.ComposeFinalVide
 	if err != nil {
 		return fmt.Errorf("get video generation: %w", err)
 	}
+	if gen.S3URL == "" {
+		return ErrAvatarNotReady
+	}
 
 	segments, err := c.repo.ListBrollSegmentsByVideoID(ctx, req.VideoID)
 	if err != nil {
@@ -32,22 +38,24 @@ func (c *ComposeFinalVideo) Run(ctx context.Context, req reqdto.ComposeFinalVide
 	}
 
 	clips := make([]application.CompositionClip, 0, len(segments))
-	var totalSec float64
+	var cursor float64
 	for _, s := range segments {
 		if s.GenerationStatus != blogger.BrollStatusDone || s.BrollURL == nil {
 			continue
 		}
-		startSec := float64(s.StartMS) / 1000
-		lenSec := float64(s.EndMS-s.StartMS) / 1000
+		// trim Kling clip to actual segment duration for fast-paced cuts
+		clipSec := float64(s.EndMS-s.StartMS) / 1000
+		if clipSec < 1.0 {
+			clipSec = 1.0
+		}
 		clips = append(clips, application.CompositionClip{
 			URL:      *s.BrollURL,
-			StartSec: startSec,
-			LenSec:   lenSec,
+			StartSec: cursor,
+			LenSec:   clipSec,
 		})
-		if end := startSec + lenSec; end > totalSec {
-			totalSec = end
-		}
+		cursor += clipSec
 	}
+	totalSec := cursor
 
 	if len(clips) == 0 {
 		return fmt.Errorf("no done broll segments to compose")

@@ -19,6 +19,7 @@ type Router struct {
 	listBloggersQuery *appquery.ListBloggers
 	listVideosQuery   *appquery.ListVideos
 	startProcessVideo *appcmd.StartProcessVideo
+	resetVideoProcess *appcmd.ResetVideoProcess
 
 	state *State
 	ui    *UI
@@ -31,6 +32,7 @@ func NewRouter(
 	listBloggers *appquery.ListBloggers,
 	listVideos *appquery.ListVideos,
 	startProcessVideo *appcmd.StartProcessVideo,
+	resetVideoProcess *appcmd.ResetVideoProcess,
 ) *Router {
 	return &Router{
 		log:               log,
@@ -39,6 +41,7 @@ func NewRouter(
 		listBloggersQuery: listBloggers,
 		listVideosQuery:   listVideos,
 		startProcessVideo: startProcessVideo,
+		resetVideoProcess: resetVideoProcess,
 		state:             NewState(),
 		ui:                NewUI(),
 	}

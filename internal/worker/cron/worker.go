@@ -135,7 +135,8 @@ func (w *Worker) pollVideoGenerations() {
 	disp.Register(&bloggerDomain.VideoGenerationDone{}, bloggerHandlers.VideoGenerationDoneToRabbitHandler(w.publisher, w.log))
 	disp.Register(&bloggerDomain.VideoGenerationError{}, bloggerHandlers.VideoGenerationErrorToRabbitHandler(w.publisher, w.log))
 
-	pollCmd := command.NewPollVideoGenerations(bloggerRepo, w.videoGenerator, w.storage, disp)
+	composeCmd := command.NewComposeFinalVideo(bloggerRepo, w.videoComposer)
+	pollCmd := command.NewPollVideoGenerations(bloggerRepo, w.videoGenerator, w.storage, disp, composeCmd)
 
 	if err := pollCmd.Execute(w.ctx); err != nil {
 		w.log.Error("Failed to poll video generations", "error", err)

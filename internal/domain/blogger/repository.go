@@ -24,6 +24,7 @@ type Repo interface {
 	ListPendingVideoGenerations(ctx context.Context) ([]*VideoGeneration, error)
 	UpdateVideoGeneration(ctx context.Context, vg *VideoGeneration) error
 	SaveVideoWatcher(ctx context.Context, w *VideoWatcher) error
+	ExistsVideoWatcher(ctx context.Context, videoID string, chatID int64) (bool, error)
 	ListVideoWatchers(ctx context.Context, videoID string) ([]*VideoWatcher, error)
 	SaveBrollSegments(ctx context.Context, videoID string, segments []*BrollSegment) error
 	ListBrollSegmentsByVideoID(ctx context.Context, videoID string) ([]*BrollSegment, error)
@@ -35,4 +36,8 @@ type Repo interface {
 	SaveVideoComposition(ctx context.Context, c *VideoComposition) error
 	UpdateVideoComposition(ctx context.Context, c *VideoComposition) error
 	ListProcessingCompositions(ctx context.Context) ([]*VideoComposition, error)
+	DeleteBrollSegmentsByVideoID(ctx context.Context, videoID string) error
+	DeleteCompositionsByVideoID(ctx context.Context, videoID string) error
+	DeleteVideoGenerationsByVideoID(ctx context.Context, videoID string) error
+	DeleteVideoWatchersByVideoID(ctx context.Context, videoID string) error
 }

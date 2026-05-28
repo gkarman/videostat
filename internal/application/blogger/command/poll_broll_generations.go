@@ -2,6 +2,7 @@ package command
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log/slog"
 
@@ -68,6 +69,10 @@ func (c *PollBrollGenerations) Execute(ctx context.Context) error {
 		}
 		slog.Info("all broll segments done, composing final video", "videoID", videoID)
 		if err := c.compose.Run(ctx, reqdto.ComposeFinalVideo{VideoID: videoID}); err != nil {
+			if errors.Is(err, ErrAvatarNotReady) {
+				slog.Info("avatar not ready yet, will retry when heygen finishes", "videoID", videoID)
+				continue
+			}
 			return fmt.Errorf("compose final video %s: %w", videoID, err)
 		}
 	}

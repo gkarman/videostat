@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/gkarman/demo/internal/application"
+	"github.com/gkarman/demo/internal/application/blogger/command/reqdto"
 	"github.com/gkarman/demo/internal/domain/blogger"
 	"github.com/gkarman/demo/internal/infrastructure/logger"
 )
@@ -18,10 +19,11 @@ type PollVideoGenerations struct {
 	g       application.VideoGenerator
 	storage application.Storage
 	d       application.Dispatcher
+	compose *ComposeFinalVideo
 }
 
-func NewPollVideoGenerations(r blogger.Repo, g application.VideoGenerator, storage application.Storage, d application.Dispatcher) *PollVideoGenerations {
-	return &PollVideoGenerations{r: r, g: g, storage: storage, d: d}
+func NewPollVideoGenerations(r blogger.Repo, g application.VideoGenerator, storage application.Storage, d application.Dispatcher, compose *ComposeFinalVideo) *PollVideoGenerations {
+	return &PollVideoGenerations{r: r, g: g, storage: storage, d: d, compose: compose}
 }
 
 func (c *PollVideoGenerations) Execute(ctx context.Context) error {
@@ -74,6 +76,15 @@ func (c *PollVideoGenerations) poll(ctx context.Context, vg *blogger.VideoGenera
 			return &blogger.VideoGenerationDone{VideoID: vg.VideoID, S3URL: s3URL, ChatID: chatID, At: time.Now()}
 		})
 		log.Info("generation completed", "s3URL", s3URL)
+		if c.compose != nil {
+			active, err := c.r.CountActiveBrollSegments(ctx, vg.VideoID)
+			if err == nil && active == 0 {
+				log.Info("broll already done, triggering composition", "videoID", vg.VideoID)
+				if err := c.compose.Run(ctx, reqdto.ComposeFinalVideo{VideoID: vg.VideoID}); err != nil {
+					log.Error("compose after heygen done", "error", err)
+				}
+			}
+		}
 
 	case "failed":
 		vg.Status = blogger.VideoGenerationFailed
