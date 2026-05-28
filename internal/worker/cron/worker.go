@@ -18,14 +18,16 @@ import (
 )
 
 type Worker struct {
-	log            *slog.Logger
-	db             *pgxpool.Pool
-	cron           *cron.Cron
-	ctx            context.Context
-	apifyClient    *sharedapify.Client
-	videoGenerator application.VideoGenerator
-	storage        application.Storage
-	publisher      application.Publisher
+	log                 *slog.Logger
+	db                  *pgxpool.Pool
+	cron                *cron.Cron
+	ctx                 context.Context
+	apifyClient         *sharedapify.Client
+	videoGenerator      application.VideoGenerator
+	brollVideoGenerator application.BrollVideoGenerator
+	videoComposer       application.VideoComposer
+	storage             application.Storage
+	publisher           application.Publisher
 }
 
 func New(
@@ -33,6 +35,8 @@ func New(
 	db *pgxpool.Pool,
 	apifyClient *sharedapify.Client,
 	videoGenerator application.VideoGenerator,
+	brollVideoGenerator application.BrollVideoGenerator,
+	videoComposer application.VideoComposer,
 	storage application.Storage,
 	publisher application.Publisher,
 ) (*Worker, error) {
@@ -45,13 +49,15 @@ func New(
 	)
 
 	return &Worker{
-		log:            log,
-		db:             db,
-		cron:           c,
-		apifyClient:    apifyClient,
-		videoGenerator: videoGenerator,
-		storage:        storage,
-		publisher:      publisher,
+		log:                 log,
+		db:                  db,
+		cron:                c,
+		apifyClient:         apifyClient,
+		videoGenerator:      videoGenerator,
+		brollVideoGenerator: brollVideoGenerator,
+		videoComposer:       videoComposer,
+		storage:             storage,
+		publisher:           publisher,
 	}, nil
 }
 
@@ -76,6 +82,12 @@ func (w *Worker) registerJobs() error {
 	if _, err := w.cron.AddFunc("*/3 * * * *", w.pollVideoGenerations); err != nil {
 		return err
 	}
+	if _, err := w.cron.AddFunc("*/1 * * * *", w.pollBrollGenerations); err != nil {
+		return err
+	}
+	if _, err := w.cron.AddFunc("*/1 * * * *", w.pollCompositions); err != nil {
+		return err
+	}
 	return nil
 }
 
@@ -88,6 +100,31 @@ func (w *Worker) refreshAllBloggers() {
 
 	if err := refreshCmd.Execute(w.ctx); err != nil {
 		w.log.Error("Failed to refresh all Bloggers.", err)
+	}
+}
+
+func (w *Worker) pollBrollGenerations() {
+	w.log.Info("polling broll generations...")
+	repo := blogger.NewPostgres(w.db)
+	composeCmd := command.NewComposeFinalVideo(repo, w.videoComposer)
+	pollCmd := command.NewPollBrollGenerations(repo, w.brollVideoGenerator, composeCmd)
+
+	if err := pollCmd.Execute(w.ctx); err != nil {
+		w.log.Error("failed to poll broll generations", "error", err)
+	} else {
+		w.log.Info("polling broll generations done")
+	}
+}
+
+func (w *Worker) pollCompositions() {
+	w.log.Info("polling compositions...")
+	repo := blogger.NewPostgres(w.db)
+	pollCmd := command.NewPollCompositions(repo, w.videoComposer)
+
+	if err := pollCmd.Execute(w.ctx); err != nil {
+		w.log.Error("failed to poll compositions", "error", err)
+	} else {
+		w.log.Info("polling compositions done")
 	}
 }
 

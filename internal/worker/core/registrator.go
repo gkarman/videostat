@@ -24,6 +24,8 @@ func NewRouterWithHandlers(
 	apifyClient *sharedapify.Client,
 	analyzer application.VideoAnalyzer,
 	videoGenerator application.VideoGenerator,
+	brollGenerator application.BrollGenerator,
+	brollVideoGenerator application.BrollVideoGenerator,
 	publisher application.Publisher,
 ) *worker.Router {
 	r := worker.NewRouter(log)
@@ -42,11 +44,13 @@ func NewRouterWithHandlers(
 
 	cmdAnalyze := command.NewAnalyzeVideo(bRepo, analyzer, disp)
 	cmdSubmitGeneration := command.NewSubmitVideoGeneration(bRepo, videoGenerator)
+	cmdSubmitBroll := command.NewSubmitBrollGenerations(bRepo, brollVideoGenerator)
+	cmdGenerateBroll := command.NewGenerateBrollSegments(bRepo, brollGenerator, cmdSubmitBroll)
 
 	bloggerCreatedHandler := handlers.NewBloggerCreatedHandler(log, cmdFVideos)
 	videoProcessingStartedHandler := handlers.NewVideoProcessingStarted(log, cmdFSources)
 	videoSourceFoundHandler := handlers.NewVideoSourceFoundHandler(log, cmdAnalyze)
-	videoAnalyzeDoneHandler := handlers.NewVideoAnalyzeDoneHandler(log, cmdSubmitGeneration)
+	videoAnalyzeDoneHandler := handlers.NewVideoAnalyzeDoneHandler(log, cmdSubmitGeneration, cmdGenerateBroll)
 
 	r.Register(events.EventBloggerCreatedV1, bloggerCreatedHandler.Handle)
 	r.Register(events.EventVideoProcessingStartedV1, videoProcessingStartedHandler.Handle)

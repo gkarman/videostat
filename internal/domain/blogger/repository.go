@@ -25,4 +25,14 @@ type Repo interface {
 	UpdateVideoGeneration(ctx context.Context, vg *VideoGeneration) error
 	SaveVideoWatcher(ctx context.Context, w *VideoWatcher) error
 	ListVideoWatchers(ctx context.Context, videoID string) ([]*VideoWatcher, error)
+	SaveBrollSegments(ctx context.Context, videoID string, segments []*BrollSegment) error
+	ListBrollSegmentsByVideoID(ctx context.Context, videoID string) ([]*BrollSegment, error)
+	ListPendingBrollSegments(ctx context.Context, videoID string) ([]*BrollSegment, error)
+	ListProcessingBrollSegments(ctx context.Context) ([]*BrollSegment, error)
+	UpdateBrollSegment(ctx context.Context, s *BrollSegment) error
+	CountActiveBrollSegments(ctx context.Context, videoID string) (int, error)
+	GetVideoGenerationByVideoID(ctx context.Context, videoID string) (*VideoGeneration, error)
+	SaveVideoComposition(ctx context.Context, c *VideoComposition) error
+	UpdateVideoComposition(ctx context.Context, c *VideoComposition) error
+	ListProcessingCompositions(ctx context.Context) ([]*VideoComposition, error)
 }

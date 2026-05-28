@@ -12,12 +12,16 @@ import (
 )
 
 type Client struct {
-	s3       *s3.Client
-	bucket   string
-	endpoint string
+	s3        *s3.Client
+	bucket    string
+	publicURL string
 }
 
-func NewClient(endpoint, accessKey, secretKey, bucket, region string) (*Client, error) {
+func NewClient(endpoint, publicURL, accessKey, secretKey, bucket, region string) (*Client, error) {
+	if publicURL == "" {
+		publicURL = endpoint
+	}
+
 	cfg, err := awsconfig.LoadDefaultConfig(context.Background(),
 		awsconfig.WithRegion(region),
 		awsconfig.WithCredentialsProvider(
@@ -33,7 +37,7 @@ func NewClient(endpoint, accessKey, secretKey, bucket, region string) (*Client, 
 		o.UsePathStyle = true
 	})
 
-	return &Client{s3: client, bucket: bucket, endpoint: endpoint}, nil
+	return &Client{s3: client, bucket: bucket, publicURL: publicURL}, nil
 }
 
 func (c *Client) Upload(ctx context.Context, key string, r io.Reader, contentType string) (string, error) {
@@ -47,5 +51,5 @@ func (c *Client) Upload(ctx context.Context, key string, r io.Reader, contentTyp
 		return "", fmt.Errorf("s3 put object: %w", err)
 	}
 
-	return fmt.Sprintf("%s/%s/%s", c.endpoint, c.bucket, key), nil
+	return fmt.Sprintf("%s/%s/%s", c.publicURL, c.bucket, key), nil
 }

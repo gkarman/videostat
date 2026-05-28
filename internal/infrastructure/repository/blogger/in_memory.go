@@ -248,3 +248,43 @@ func (r *InMemoryRepo) SaveVideoWatcher(_ context.Context, w *blogger.VideoWatch
 func (r *InMemoryRepo) ListVideoWatchers(_ context.Context, videoID string) ([]*blogger.VideoWatcher, error) {
 	return nil, nil
 }
+
+func (r *InMemoryRepo) SaveBrollSegments(_ context.Context, videoID string, segments []*blogger.BrollSegment) error {
+	return nil
+}
+
+func (r *InMemoryRepo) ListBrollSegmentsByVideoID(_ context.Context, videoID string) ([]*blogger.BrollSegment, error) {
+	return nil, nil
+}
+
+func (r *InMemoryRepo) ListPendingBrollSegments(_ context.Context, videoID string) ([]*blogger.BrollSegment, error) {
+	return nil, nil
+}
+
+func (r *InMemoryRepo) ListProcessingBrollSegments(_ context.Context) ([]*blogger.BrollSegment, error) {
+	return nil, nil
+}
+
+func (r *InMemoryRepo) UpdateBrollSegment(_ context.Context, s *blogger.BrollSegment) error {
+	return nil
+}
+
+func (r *InMemoryRepo) CountActiveBrollSegments(_ context.Context, videoID string) (int, error) {
+	return 0, nil
+}
+
+func (r *InMemoryRepo) GetVideoGenerationByVideoID(_ context.Context, videoID string) (*blogger.VideoGeneration, error) {
+	return nil, blogger.ErrVideoNotFound
+}
+
+func (r *InMemoryRepo) SaveVideoComposition(_ context.Context, c *blogger.VideoComposition) error {
+	return nil
+}
+
+func (r *InMemoryRepo) UpdateVideoComposition(_ context.Context, c *blogger.VideoComposition) error {
+	return nil
+}
+
+func (r *InMemoryRepo) ListProcessingCompositions(_ context.Context) ([]*blogger.VideoComposition, error) {
+	return nil, nil
+}

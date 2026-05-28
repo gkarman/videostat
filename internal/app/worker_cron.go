@@ -26,6 +26,8 @@ func NewWorkerCron(ctx context.Context) (*cronworker.Worker, error) {
 
 	apifyClient := platform.NewApifyClient(cfg)
 	videoGenerator := platform.NewHeyGenClient(cfg)
+	brollVideoGenerator := platform.NewKlingClient(cfg)
+	videoComposer := platform.NewShotstackClient(cfg)
 
 	s3Client, err := platform.NewS3Client(cfg)
 	if err != nil {
@@ -39,7 +41,7 @@ func NewWorkerCron(ctx context.Context) (*cronworker.Worker, error) {
 		return nil, fmt.Errorf("init rabbit publisher: %w", err)
 	}
 
-	worker, err := cronworker.New(log, db, apifyClient, videoGenerator, s3Client, publisher)
+	worker, err := cronworker.New(log, db, apifyClient, videoGenerator, brollVideoGenerator, videoComposer, s3Client, publisher)
 	if err != nil {
 		return nil, fmt.Errorf("create worker cron: %w", err)
 	}

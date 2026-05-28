@@ -10,6 +10,7 @@ import (
 func NewS3Client(cfg *config.Config) (*s3storage.Client, error) {
 	client, err := s3storage.NewClient(
 		cfg.S3.Endpoint,
+		cfg.S3.PublicURL,
 		cfg.S3.AccessKey,
 		cfg.S3.SecretKey,
 		cfg.S3.Bucket,

@@ -12,11 +12,13 @@ import (
 )
 
 type VideoAnalyzeDoneHandler struct {
-	command *command.SubmitVideoGeneration
+	log            *slog.Logger
+	submitGen      *command.SubmitVideoGeneration
+	generateBroll  *command.GenerateBrollSegments
 }
 
-func NewVideoAnalyzeDoneHandler(log *slog.Logger, command *command.SubmitVideoGeneration) *VideoAnalyzeDoneHandler {
-	return &VideoAnalyzeDoneHandler{command: command}
+func NewVideoAnalyzeDoneHandler(log *slog.Logger, submitGen *command.SubmitVideoGeneration, generateBroll *command.GenerateBrollSegments) *VideoAnalyzeDoneHandler {
+	return &VideoAnalyzeDoneHandler{log: log, submitGen: submitGen, generateBroll: generateBroll}
 }
 
 func (h *VideoAnalyzeDoneHandler) Handle(ctx context.Context, body []byte) error {
@@ -30,9 +32,12 @@ func (h *VideoAnalyzeDoneHandler) Handle(ctx context.Context, body []byte) error
 		return err
 	}
 
-	err := h.command.Run(ctx, reqdto.SubmitVideoGeneration{VideoID: evt.VideoID})
-	if err != nil {
-		log.Error("command error", "error", err)
+	if err := h.submitGen.Run(ctx, reqdto.SubmitVideoGeneration{VideoID: evt.VideoID}); err != nil {
+		log.Error("submit video generation failed", "error", err)
+	}
+
+	if err := h.generateBroll.Run(ctx, reqdto.GenerateBrollSegments{VideoID: evt.VideoID}); err != nil {
+		h.log.Error("generate broll segments failed", "error", err)
 	}
 
 	return nil

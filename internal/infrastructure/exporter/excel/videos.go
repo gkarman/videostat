@@ -57,9 +57,9 @@ var headers = []string{
 	"Признак вирусности",
 	"Признак релевантности заголовка",
 	"Статус обработки",
-	"Стадия на которой возника ошибка",
+	"Стадия на которой возникла ошибка",
 	"Ошибка",
-	"Ресурс аналица видео",
+	"Ресурс анализа видео",
 	"Данные от ресурса анализа видео",
 	"ИИ",
 	"ИИ модель",
@@ -69,7 +69,9 @@ var headers = []string{
 	"ID генерации",
 	"Статус генерации",
 	"Ошибка генерации",
-	"Ссылка на S3",
+	"Ссылка на аватар (S3)",
+	"Статус сборки",
+	"Ссылка на финальное видео",
 }
 
 type columnGroup struct {
@@ -84,7 +86,8 @@ var columnGroups = []columnGroup{
 	{"Показатели качества контента", 9, 10},
 	{"Анализ видео донора", 11, 15},
 	{"Данные для генерации нового видео", 16, 19},
-	{"Данные о новом видео", 20, 24},
+	{"Аватар (HeyGen)", 20, 24},
+	{"Финальное видео (Shotstack)", 25, 26},
 }
 
 func writeVideosSheet(f *excelize.File, sheet string, videos []*view.Video) error {
@@ -214,6 +217,8 @@ func writeVideosSheet(f *excelize.File, sheet string, videos []*view.Video) erro
 			deref(v.GenerationStatus),
 			deref(v.GenerationErrorMessage),
 			deref(v.GenerationS3URL),
+			deref(v.CompositionStatus),
+			deref(v.CompositionResultURL),
 		}
 
 		for col, val := range vals {

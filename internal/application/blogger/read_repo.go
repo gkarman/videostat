@@ -40,6 +40,9 @@ type VideoRow struct {
 	GenerationStatus        *string
 	GenerationS3URL         *string
 	GenerationErrorMessage  *string
+
+	CompositionStatus    *string
+	CompositionResultURL *string
 }
 
 type ReadRepo interface {

@@ -65,7 +65,9 @@ func (r *QueryPostgres) ListVideos(ctx context.Context) ([]blogger.VideoRow, err
 		    vg.external_id     AS generation_external_id,
 		    vg.status          AS generation_status,
 		    vg.s3_url          AS generation_s3_url,
-		    vg.error_message   AS generation_error_message
+		    vg.error_message   AS generation_error_message,
+		    vc.status          AS composition_status,
+		    vc.result_url      AS composition_result_url
 		FROM videos v
 		JOIN bloggers b ON b.id = v.blogger_id
 		JOIN platforms p ON p.id = b.platform_id
@@ -90,6 +92,13 @@ func (r *QueryPostgres) ListVideos(ctx context.Context) ([]blogger.VideoRow, err
 		    ORDER BY created_at DESC
 		    LIMIT 1
 		) vg ON true
+		LEFT JOIN LATERAL (
+		    SELECT status, result_url
+		    FROM video_compositions
+		    WHERE video_id = v.id
+		    ORDER BY created_at DESC
+		    LIMIT 1
+		) vc ON true
 	`)
 	if err != nil {
 		return nil, err
@@ -125,6 +134,8 @@ func (r *QueryPostgres) ListVideos(ctx context.Context) ([]blogger.VideoRow, err
 			&v.GenerationStatus,
 			&v.GenerationS3URL,
 			&v.GenerationErrorMessage,
+			&v.CompositionStatus,
+			&v.CompositionResultURL,
 		); err != nil {
 			return nil, err
 		}

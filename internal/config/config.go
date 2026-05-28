@@ -19,6 +19,8 @@ type Config struct {
 	LLM         LLMConfig
 	S3          S3Config
 	HeyGen      HeyGenConfig
+	Kling       KlingConfig
+	Shotstack   ShotstackConfig
 }
 
 type DBConfig struct {
@@ -124,8 +126,20 @@ type HeyGenConfig struct {
 	VoiceID  string `env:"HEYGEN_VOICE_ID" env-default:""`
 }
 
+type ShotstackConfig struct {
+	APIKey  string `env:"SHOTSTACK_API_KEY" env-default:""`
+	BaseURL string `env:"SHOTSTACK_BASE_URL" env-default:"https://api.shotstack.io/edit/stage"`
+}
+
+type KlingConfig struct {
+	AccessKeyID string `env:"KLING_ACCESS_KEY_ID" env-default:""`
+	SecretKey   string `env:"KLING_SECRET_KEY" env-default:""`
+	Model       string `env:"KLING_MODEL" env-default:"kling-v1"`
+}
+
 type S3Config struct {
 	Endpoint  string `env:"S3_ENDPOINT" env-default:"http://localhost:9000"`
+	PublicURL string `env:"S3_PUBLIC_URL" env-default:""`  // ngrok locally, same as Endpoint in prod
 	AccessKey string `env:"S3_ACCESS_KEY" env-default:"minioadmin"`
 	SecretKey string `env:"S3_SECRET_KEY" env-default:"minioadmin"`
 	Bucket    string `env:"S3_BUCKET" env-default:"videostat"`

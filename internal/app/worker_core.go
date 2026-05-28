@@ -50,7 +50,15 @@ func NewWorkerCore(ctx context.Context) (*core.Worker, error) {
 	analyzer := platform.NewAssemblyAIAnalyzer(cfg)
 	videoGenerator := platform.NewHeyGenClient(cfg)
 
-	router := core.NewRouterWithHandlers(log, db, apifyClient, analyzer, videoGenerator, publisher)
+	brollGenerator, err := platform.NewBrollGenerator(cfg)
+	if err != nil {
+		db.Close()
+		return nil, fmt.Errorf("init broll generator: %w", err)
+	}
+
+	brollVideoGenerator := platform.NewKlingClient(cfg)
+
+	router := core.NewRouterWithHandlers(log, db, apifyClient, analyzer, videoGenerator, brollGenerator, brollVideoGenerator, publisher)
 	worker := core.New(log, consumer, router)
 
 	return worker, nil

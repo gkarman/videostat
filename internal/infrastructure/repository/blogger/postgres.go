@@ -468,3 +468,198 @@ func (r *PostgresRepo) ListVideoWatchers(ctx context.Context, videoID string) ([
 	}
 	return result, rows.Err()
 }
+
+func (r *PostgresRepo) SaveBrollSegments(ctx context.Context, videoID string, segments []*blogger.BrollSegment) error {
+	const q = `
+		INSERT INTO video_broll_segments (id, video_id, position, start_ms, end_ms, text, broll_prompt, created_at)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+	`
+	for _, s := range segments {
+		s.VideoID = videoID
+		if _, err := r.db.Exec(ctx, q, s.ID, s.VideoID, s.Position, s.StartMS, s.EndMS, s.Text, s.BrollPrompt, s.CreatedAt); err != nil {
+			return fmt.Errorf("save broll segment: %w", err)
+		}
+	}
+	return nil
+}
+
+func (r *PostgresRepo) ListBrollSegmentsByVideoID(ctx context.Context, videoID string) ([]*blogger.BrollSegment, error) {
+	const q = `
+		SELECT id, video_id, position, start_ms, end_ms, text, broll_prompt, broll_url,
+		       generation_status, generation_external_id, generation_error, created_at
+		FROM video_broll_segments
+		WHERE video_id = $1
+		ORDER BY position
+	`
+	rows, err := r.db.Query(ctx, q, videoID)
+	if err != nil {
+		return nil, fmt.Errorf("list broll segments: %w", err)
+	}
+	defer rows.Close()
+
+	var result []*blogger.BrollSegment
+	for rows.Next() {
+		s, err := scanBrollSegment(rows)
+		if err != nil {
+			return nil, err
+		}
+		result = append(result, s)
+	}
+	return result, rows.Err()
+}
+
+func (r *PostgresRepo) ListPendingBrollSegments(ctx context.Context, videoID string) ([]*blogger.BrollSegment, error) {
+	const q = `
+		SELECT id, video_id, position, start_ms, end_ms, text, broll_prompt, broll_url,
+		       generation_status, generation_external_id, generation_error, created_at
+		FROM video_broll_segments
+		WHERE video_id = $1 AND generation_status = 'pending'
+		ORDER BY position
+	`
+	rows, err := r.db.Query(ctx, q, videoID)
+	if err != nil {
+		return nil, fmt.Errorf("list pending broll segments: %w", err)
+	}
+	defer rows.Close()
+
+	var result []*blogger.BrollSegment
+	for rows.Next() {
+		s, err := scanBrollSegment(rows)
+		if err != nil {
+			return nil, err
+		}
+		result = append(result, s)
+	}
+	return result, rows.Err()
+}
+
+func (r *PostgresRepo) ListProcessingBrollSegments(ctx context.Context) ([]*blogger.BrollSegment, error) {
+	const q = `
+		SELECT id, video_id, position, start_ms, end_ms, text, broll_prompt, broll_url,
+		       generation_status, generation_external_id, generation_error, created_at
+		FROM video_broll_segments
+		WHERE generation_status = 'processing'
+		ORDER BY created_at
+	`
+	rows, err := r.db.Query(ctx, q)
+	if err != nil {
+		return nil, fmt.Errorf("list processing broll segments: %w", err)
+	}
+	defer rows.Close()
+
+	var result []*blogger.BrollSegment
+	for rows.Next() {
+		s, err := scanBrollSegment(rows)
+		if err != nil {
+			return nil, err
+		}
+		result = append(result, s)
+	}
+	return result, rows.Err()
+}
+
+func (r *PostgresRepo) UpdateBrollSegment(ctx context.Context, s *blogger.BrollSegment) error {
+	const q = `
+		UPDATE video_broll_segments
+		SET generation_status = $1, generation_external_id = $2, generation_error = $3, broll_url = $4
+		WHERE id = $5
+	`
+	_, err := r.db.Exec(ctx, q, s.GenerationStatus, s.GenerationExternalID, s.GenerationError, s.BrollURL, s.ID)
+	if err != nil {
+		return fmt.Errorf("update broll segment: %w", err)
+	}
+	return nil
+}
+
+func (r *PostgresRepo) CountActiveBrollSegments(ctx context.Context, videoID string) (int, error) {
+	const q = `
+		SELECT COUNT(*) FROM video_broll_segments
+		WHERE video_id = $1 AND generation_status IN ('pending', 'processing')
+	`
+	var count int
+	if err := r.db.QueryRow(ctx, q, videoID).Scan(&count); err != nil {
+		return 0, fmt.Errorf("count active broll segments: %w", err)
+	}
+	return count, nil
+}
+
+func (r *PostgresRepo) GetVideoGenerationByVideoID(ctx context.Context, videoID string) (*blogger.VideoGeneration, error) {
+	const q = `
+		SELECT id, video_id, external_id, status, s3_url, error_message, created_at
+		FROM video_generations
+		WHERE video_id = $1
+		ORDER BY created_at DESC
+		LIMIT 1
+	`
+	var vg blogger.VideoGeneration
+	err := r.db.QueryRow(ctx, q, videoID).Scan(
+		&vg.ID, &vg.VideoID, &vg.ExternalID, &vg.Status, &vg.S3URL, &vg.ErrorMessage, &vg.CreatedAt,
+	)
+	if err != nil {
+		return nil, fmt.Errorf("get video generation by video id: %w", err)
+	}
+	return &vg, nil
+}
+
+func (r *PostgresRepo) SaveVideoComposition(ctx context.Context, c *blogger.VideoComposition) error {
+	const q = `
+		INSERT INTO video_compositions (id, video_id, status, external_id, result_url, error, created_at)
+		VALUES ($1, $2, $3, $4, $5, $6, $7)
+	`
+	_, err := r.db.Exec(ctx, q, c.ID, c.VideoID, c.Status, c.ExternalID, c.ResultURL, c.Error, c.CreatedAt)
+	if err != nil {
+		return fmt.Errorf("save video composition: %w", err)
+	}
+	return nil
+}
+
+func (r *PostgresRepo) UpdateVideoComposition(ctx context.Context, c *blogger.VideoComposition) error {
+	const q = `
+		UPDATE video_compositions
+		SET status = $1, result_url = $2, error = $3
+		WHERE id = $4
+	`
+	_, err := r.db.Exec(ctx, q, c.Status, c.ResultURL, c.Error, c.ID)
+	if err != nil {
+		return fmt.Errorf("update video composition: %w", err)
+	}
+	return nil
+}
+
+func (r *PostgresRepo) ListProcessingCompositions(ctx context.Context) ([]*blogger.VideoComposition, error) {
+	const q = `
+		SELECT id, video_id, status, external_id, result_url, error, created_at
+		FROM video_compositions
+		WHERE status = 'processing'
+		ORDER BY created_at
+	`
+	rows, err := r.db.Query(ctx, q)
+	if err != nil {
+		return nil, fmt.Errorf("list processing compositions: %w", err)
+	}
+	defer rows.Close()
+
+	var result []*blogger.VideoComposition
+	for rows.Next() {
+		var c blogger.VideoComposition
+		if err := rows.Scan(&c.ID, &c.VideoID, &c.Status, &c.ExternalID, &c.ResultURL, &c.Error, &c.CreatedAt); err != nil {
+			return nil, fmt.Errorf("scan video composition: %w", err)
+		}
+		result = append(result, &c)
+	}
+	return result, rows.Err()
+}
+
+func scanBrollSegment(row interface{ Scan(...any) error }) (*blogger.BrollSegment, error) {
+	var s blogger.BrollSegment
+	err := row.Scan(
+		&s.ID, &s.VideoID, &s.Position, &s.StartMS, &s.EndMS,
+		&s.Text, &s.BrollPrompt, &s.BrollURL,
+		&s.GenerationStatus, &s.GenerationExternalID, &s.GenerationError,
+		&s.CreatedAt,
+	)
+	if err != nil {
+		return nil, fmt.Errorf("scan broll segment: %w", err)
+	}
+	return &s, nil
+}
