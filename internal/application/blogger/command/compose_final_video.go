@@ -55,7 +55,13 @@ func (c *ComposeFinalVideo) Run(ctx context.Context, req reqdto.ComposeFinalVide
 		})
 		cursor += clipSec
 	}
-	totalSec := cursor
+
+	// avatar duration = end of last segment's speech (from original transcript),
+	// not cursor (which only sums done broll segments and cuts avatar short if any failed)
+	totalSec := float64(segments[len(segments)-1].EndMS) / 1000.0
+	if totalSec < cursor {
+		totalSec = cursor
+	}
 
 	if len(clips) == 0 {
 		return fmt.Errorf("no done broll segments to compose")

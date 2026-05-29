@@ -14,6 +14,7 @@ func NewRouterWithHandlers(log *slog.Logger, n *notifier.TelegramNotifier) *work
 
 	r.Register(events.EventVideoGenerationDoneV1, notify_handlers.NewVideoGenerationDoneHandler(n, log).Handle)
 	r.Register(events.EventVideoGenerationErrorV1, notify_handlers.NewVideoGenerationErrorHandler(n, log).Handle)
+	r.Register(events.EventVideoCompositionDoneV1, notify_handlers.NewVideoCompositionDoneHandler(n, log).Handle)
 
 	return r
 }

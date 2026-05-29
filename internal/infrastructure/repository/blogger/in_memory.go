@@ -300,3 +300,11 @@ func (r *InMemoryRepo) DeleteVideoWatchersByVideoID(_ context.Context, _ string)
 func (r *InMemoryRepo) ExistsVideoWatcher(_ context.Context, _ string, _ int64) (bool, error) {
 	return false, nil
 }
+
+func (r *InMemoryRepo) ListVideosWithPendingBrollSegments(_ context.Context) ([]string, error) {
+	return nil, nil
+}
+
+func (r *InMemoryRepo) ListVideosReadyToCompose(_ context.Context) ([]string, error) {
+	return nil, nil
+}

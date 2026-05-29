@@ -29,6 +29,8 @@ type Repo interface {
 	SaveBrollSegments(ctx context.Context, videoID string, segments []*BrollSegment) error
 	ListBrollSegmentsByVideoID(ctx context.Context, videoID string) ([]*BrollSegment, error)
 	ListPendingBrollSegments(ctx context.Context, videoID string) ([]*BrollSegment, error)
+	ListVideosWithPendingBrollSegments(ctx context.Context) ([]string, error)
+	ListVideosReadyToCompose(ctx context.Context) ([]string, error)
 	ListProcessingBrollSegments(ctx context.Context) ([]*BrollSegment, error)
 	UpdateBrollSegment(ctx context.Context, s *BrollSegment) error
 	CountActiveBrollSegments(ctx context.Context, videoID string) (int, error)

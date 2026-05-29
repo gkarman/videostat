@@ -52,6 +52,7 @@ func NewTelegramBot(log *slog.Logger, cfg *config.Config, db *pgxpool.Pool, d *d
 		listVideosQuery,
 		startProcessVideoCmd,
 		resetVideoProcessCmd,
+		cfg.TelegramBot.AllowedUsernames,
 	)
 
 	bot.SetHandler(router)

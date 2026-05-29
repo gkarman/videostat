@@ -34,6 +34,8 @@ func (c *PollVideoGenerations) Execute(ctx context.Context) error {
 		return fmt.Errorf("list pending generations: %w", err)
 	}
 
+	log.Info("poll video generations", "count", len(pending))
+
 	for _, vg := range pending {
 		if vg.Platform != c.g.Platform() {
 			continue
@@ -70,11 +72,13 @@ func (c *PollVideoGenerations) poll(ctx context.Context, vg *blogger.VideoGenera
 		vg.S3URL = s3URL
 		vg.UpdatedAt = time.Now()
 		if err = v.MarkReady(); err != nil {
-			return fmt.Errorf("mark ready: %w", err)
+			// video already in ready/terminal state — generation row was never updated, fix it now
+			log.Warn("mark ready skipped, video already in terminal state", "videoStatus", v.Status, "error", err)
+		} else {
+			c.dispatchToWatchers(ctx, vg.VideoID, func(chatID int64) any {
+				return &blogger.VideoGenerationDone{VideoID: vg.VideoID, S3URL: s3URL, ChatID: chatID, At: time.Now()}
+			})
 		}
-		c.dispatchToWatchers(ctx, vg.VideoID, func(chatID int64) any {
-			return &blogger.VideoGenerationDone{VideoID: vg.VideoID, S3URL: s3URL, ChatID: chatID, At: time.Now()}
-		})
 		log.Info("generation completed", "s3URL", s3URL)
 		if c.compose != nil {
 			active, err := c.r.CountActiveBrollSegments(ctx, vg.VideoID)

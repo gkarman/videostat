@@ -14,8 +14,8 @@ import (
 
 const (
 	baseURL         = "https://api.heygen.com"
-	videoWidth      = 1920
-	videoHeight     = 1080
+	videoWidth      = 1280
+	videoHeight     = 720
 	httpTimeout     = 30 * time.Second
 )
 

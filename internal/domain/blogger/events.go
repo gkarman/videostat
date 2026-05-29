@@ -50,3 +50,11 @@ type VideoGenerationError struct {
 	Reason  string
 	At      time.Time
 }
+
+type VideoCompositionDone struct {
+	VideoID   string
+	ChatID    int64
+	ResultURL string
+	SourceURL string
+	At        time.Time
+}

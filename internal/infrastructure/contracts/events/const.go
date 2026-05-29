@@ -8,4 +8,5 @@ const (
 	EventVideoPromptGeneratedV1        = "blogger.video_prompt.generated.v1"
 	EventVideoGenerationDoneV1  = "blogger.video_generation.done.v1"
 	EventVideoGenerationErrorV1 = "blogger.video_generation.error.v1"
+	EventVideoCompositionDoneV1 = "blogger.video_composition.done.v1"
 )

@@ -7,15 +7,33 @@ import (
 
 	"github.com/gkarman/demo/internal/application"
 	"github.com/gkarman/demo/internal/application/blogger/command"
+	"github.com/gkarman/demo/internal/application/blogger/command/reqdto"
 	bloggerHandlers "github.com/gkarman/demo/internal/application/blogger/handlers"
 	bloggerDomain "github.com/gkarman/demo/internal/domain/blogger"
 	sharedapify "github.com/gkarman/demo/internal/infrastructure/apify"
 	"github.com/gkarman/demo/internal/infrastructure/dispatcher"
+	"github.com/gkarman/demo/internal/infrastructure/logger"
 	"github.com/gkarman/demo/internal/infrastructure/repository/blogger"
 	apifysearcher "github.com/gkarman/demo/internal/infrastructure/videosearcher/apify"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/robfig/cron/v3"
 )
+
+// slogCronLogger adapts slog.Logger to the cron.Logger interface.
+type slogCronLogger struct{ log *slog.Logger }
+
+func (l *slogCronLogger) Info(msg string, keysAndValues ...any) {
+	l.log.Info("cron: "+msg, keysAndValues...)
+}
+
+func (l *slogCronLogger) Error(err error, msg string, keysAndValues ...any) {
+	l.log.Error("cron: "+msg, append(keysAndValues, "error", err)...)
+}
+
+type noopCronLogger struct{}
+
+func (noopCronLogger) Info(_ string, _ ...any)             {}
+func (noopCronLogger) Error(_ error, _ string, _ ...any)   {}
 
 type Worker struct {
 	log                 *slog.Logger
@@ -40,12 +58,10 @@ func New(
 	storage application.Storage,
 	publisher application.Publisher,
 ) (*Worker, error) {
+	cronLog := &slogCronLogger{log: log}
 	c := cron.New(
 		cron.WithLocation(time.Local),
-		cron.WithChain(
-			cron.SkipIfStillRunning(cron.DefaultLogger),
-			cron.Recover(cron.DefaultLogger),
-		),
+		cron.WithChain(cron.Recover(cronLog)),
 	)
 
 	return &Worker{
@@ -62,7 +78,7 @@ func New(
 }
 
 func (w *Worker) Run(ctx context.Context) error {
-	w.ctx = ctx
+	w.ctx = logger.WithLogger(ctx, w.log)
 
 	if err := w.registerJobs(); err != nil {
 		return err
@@ -76,22 +92,33 @@ func (w *Worker) Run(ctx context.Context) error {
 }
 
 func (w *Worker) registerJobs() error {
-	if _, err := w.cron.AddFunc("0 3 * * *", w.refreshAllBloggers); err != nil {
+	skip := func(fn func()) cron.Job {
+		return cron.NewChain(cron.SkipIfStillRunning(noopCronLogger{})).Then(cron.FuncJob(fn))
+	}
+
+	if _, err := w.cron.AddJob("0 3 * * *", skip(w.refreshAllBloggers)); err != nil {
 		return err
 	}
-	if _, err := w.cron.AddFunc("*/3 * * * *", w.pollVideoGenerations); err != nil {
+	if _, err := w.cron.AddJob("*/1 * * * *", skip(w.pollVideoGenerations)); err != nil {
 		return err
 	}
-	if _, err := w.cron.AddFunc("*/1 * * * *", w.pollBrollGenerations); err != nil {
+	if _, err := w.cron.AddJob("*/1 * * * *", skip(w.pollBrollGenerations)); err != nil {
 		return err
 	}
-	if _, err := w.cron.AddFunc("*/1 * * * *", w.pollCompositions); err != nil {
+	if _, err := w.cron.AddJob("*/1 * * * *", skip(w.pollCompositions)); err != nil {
+		return err
+	}
+	if _, err := w.cron.AddJob("*/1 * * * *", skip(w.retryPendingBrollSubmissions)); err != nil {
+		return err
+	}
+	if _, err := w.cron.AddJob("*/1 * * * *", skip(w.triggerPendingCompositions)); err != nil {
 		return err
 	}
 	return nil
 }
 
 func (w *Worker) refreshAllBloggers() {
+	w.log.Info("cron: refreshAllBloggers started")
 	bloggerRepo := blogger.NewPostgres(w.db)
 	videoSearcher := apifysearcher.NewVideoSearcher(w.apifyClient)
 	fetchVideoCmd := command.NewFetchBloggerVideos(bloggerRepo, videoSearcher)
@@ -119,7 +146,11 @@ func (w *Worker) pollBrollGenerations() {
 func (w *Worker) pollCompositions() {
 	w.log.Info("polling compositions...")
 	repo := blogger.NewPostgres(w.db)
-	pollCmd := command.NewPollCompositions(repo, w.videoComposer)
+
+	disp := dispatcher.New()
+	disp.Register(&bloggerDomain.VideoCompositionDone{}, bloggerHandlers.VideoCompositionDoneToRabbitHandler(w.publisher, w.log))
+
+	pollCmd := command.NewPollCompositions(repo, w.videoComposer, disp)
 
 	if err := pollCmd.Execute(w.ctx); err != nil {
 		w.log.Error("failed to poll compositions", "error", err)
@@ -128,7 +159,50 @@ func (w *Worker) pollCompositions() {
 	}
 }
 
+func (w *Worker) retryPendingBrollSubmissions() {
+	w.log.Info("cron: retryPendingBrollSubmissions started")
+	repo := blogger.NewPostgres(w.db)
+	videoIDs, err := repo.ListVideosWithPendingBrollSegments(w.ctx)
+	if err != nil {
+		w.log.Error("failed to list videos with pending broll segments", "error", err)
+		return
+	}
+	if len(videoIDs) == 0 {
+		return
+	}
+	w.log.Info("retrying pending broll submissions", "videos", len(videoIDs))
+	submitCmd := command.NewSubmitBrollGenerations(repo, w.brollVideoGenerator)
+	for _, videoID := range videoIDs {
+		if err := submitCmd.Run(w.ctx, reqdto.SubmitBrollGenerations{VideoID: videoID}); err != nil {
+			w.log.Error("failed to submit broll generations", "videoID", videoID, "error", err)
+		}
+	}
+}
+
+func (w *Worker) triggerPendingCompositions() {
+	w.log.Info("cron: triggerPendingCompositions started")
+	repo := blogger.NewPostgres(w.db)
+	videoIDs, err := repo.ListVideosReadyToCompose(w.ctx)
+	if err != nil {
+		w.log.Error("failed to list videos ready to compose", "error", err)
+		return
+	}
+	if len(videoIDs) == 0 {
+		return
+	}
+	w.log.Info("found videos ready to compose", "count", len(videoIDs))
+	composeCmd := command.NewComposeFinalVideo(repo, w.videoComposer)
+	for _, videoID := range videoIDs {
+		if err := composeCmd.Run(w.ctx, reqdto.ComposeFinalVideo{VideoID: videoID}); err != nil {
+			w.log.Error("failed to compose video", "videoID", videoID, "error", err)
+		} else {
+			w.log.Info("composition triggered", "videoID", videoID)
+		}
+	}
+}
+
 func (w *Worker) pollVideoGenerations() {
+	w.log.Info("polling video generations...")
 	bloggerRepo := blogger.NewPostgres(w.db)
 
 	disp := dispatcher.New()
@@ -139,6 +213,8 @@ func (w *Worker) pollVideoGenerations() {
 	pollCmd := command.NewPollVideoGenerations(bloggerRepo, w.videoGenerator, w.storage, disp, composeCmd)
 
 	if err := pollCmd.Execute(w.ctx); err != nil {
-		w.log.Error("Failed to poll video generations", "error", err)
+		w.log.Error("failed to poll video generations", "error", err)
+	} else {
+		w.log.Info("polling video generations done")
 	}
 }

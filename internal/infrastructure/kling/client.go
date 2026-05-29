@@ -38,7 +38,7 @@ func (c *Client) Submit(ctx context.Context, prompt string, durationSec int) (st
 	body, err := json.Marshal(map[string]any{
 		"model_name":      c.model,
 		"prompt":          prompt,
-		"negative_prompt": "Chinese text, subtitles, captions, watermark, text overlay, Asian characters, hanzi, kanji",
+		"negative_prompt": "slow motion, slow-mo, cinematic slow, time lapse, fade in, fade out, smooth dolly, peaceful, calm, static shot, still camera, CGI, animation, 3D render, video game, cartoon, Asian people, Asian faces, Chinese people, Japanese people, Korean people, Asian locations, China, Japan, Korea, Asian city, Asian street, non-English signs, Chinese text, subtitles, captions, watermark, Asian characters, hanzi, kanji",
 		"duration":        fmt.Sprintf("%d", durationSec),
 		"aspect_ratio":    "9:16",
 	})

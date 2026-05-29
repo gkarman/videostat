@@ -542,6 +542,58 @@ func (r *PostgresRepo) ListPendingBrollSegments(ctx context.Context, videoID str
 	return result, rows.Err()
 }
 
+func (r *PostgresRepo) ListVideosReadyToCompose(ctx context.Context) ([]string, error) {
+	const q = `
+		SELECT vg.video_id
+		FROM video_generations vg
+		WHERE vg.status = 'completed'
+		  AND vg.s3_url != ''
+		  AND NOT EXISTS (
+		    SELECT 1 FROM video_broll_segments vbs
+		    WHERE vbs.video_id = vg.video_id
+		      AND vbs.generation_status IN ('pending', 'processing')
+		  )
+		  AND NOT EXISTS (
+		    SELECT 1 FROM video_compositions vc
+		    WHERE vc.video_id = vg.video_id
+		  )
+	`
+	rows, err := r.db.Query(ctx, q)
+	if err != nil {
+		return nil, fmt.Errorf("list videos ready to compose: %w", err)
+	}
+	defer rows.Close()
+
+	var result []string
+	for rows.Next() {
+		var id string
+		if err := rows.Scan(&id); err != nil {
+			return nil, err
+		}
+		result = append(result, id)
+	}
+	return result, rows.Err()
+}
+
+func (r *PostgresRepo) ListVideosWithPendingBrollSegments(ctx context.Context) ([]string, error) {
+	const q = `SELECT DISTINCT video_id FROM video_broll_segments WHERE generation_status = 'pending'`
+	rows, err := r.db.Query(ctx, q)
+	if err != nil {
+		return nil, fmt.Errorf("list videos with pending broll segments: %w", err)
+	}
+	defer rows.Close()
+
+	var result []string
+	for rows.Next() {
+		var id string
+		if err := rows.Scan(&id); err != nil {
+			return nil, err
+		}
+		result = append(result, id)
+	}
+	return result, rows.Err()
+}
+
 func (r *PostgresRepo) ListProcessingBrollSegments(ctx context.Context) ([]*blogger.BrollSegment, error) {
 	const q = `
 		SELECT id, video_id, position, start_ms, end_ms, text, broll_prompt, broll_url,
@@ -549,6 +601,7 @@ func (r *PostgresRepo) ListProcessingBrollSegments(ctx context.Context) ([]*blog
 		FROM video_broll_segments
 		WHERE generation_status = 'processing'
 		ORDER BY created_at
+		LIMIT 20
 	`
 	rows, err := r.db.Query(ctx, q)
 	if err != nil {

@@ -31,6 +31,26 @@ func VideoGenerationDoneToRabbitHandler(publisher application.Publisher, log *sl
 	}
 }
 
+func VideoCompositionDoneToRabbitHandler(publisher application.Publisher, log *slog.Logger) func(ctx context.Context, e any) {
+	return func(ctx context.Context, e any) {
+		event, ok := e.(*blogger.VideoCompositionDone)
+		if !ok {
+			log.Error("invalid event type for blogger.VideoCompositionDone", "event", e)
+			return
+		}
+
+		body, err := json.Marshal(mappers.MapVideoCompositionDone(event))
+		if err != nil {
+			log.Error("marshal VideoCompositionDone failed", "err", err)
+			return
+		}
+
+		if err = publisher.Publish(ctx, events.EventVideoCompositionDoneV1, body); err != nil {
+			log.Error("publish VideoCompositionDone failed", "err", err)
+		}
+	}
+}
+
 func VideoGenerationErrorToRabbitHandler(publisher application.Publisher, log *slog.Logger) func(ctx context.Context, e any) {
 	return func(ctx context.Context, e any) {
 		event, ok := e.(*blogger.VideoGenerationError)

@@ -3,6 +3,7 @@ package command
 import (
 	"context"
 	"log/slog"
+	"strings"
 
 	appcmd "github.com/gkarman/demo/internal/application/blogger/command"
 	appquery "github.com/gkarman/demo/internal/application/blogger/query"
@@ -13,7 +14,8 @@ import (
 type Router struct {
 	log *slog.Logger
 
-	sender telegram.Sender
+	sender           telegram.Sender
+	allowedUsernames map[string]struct{}
 
 	createBlogger     *appcmd.CreateBlogger
 	listBloggersQuery *appquery.ListBloggers
@@ -33,10 +35,16 @@ func NewRouter(
 	listVideos *appquery.ListVideos,
 	startProcessVideo *appcmd.StartProcessVideo,
 	resetVideoProcess *appcmd.ResetVideoProcess,
+	allowedUsernames []string,
 ) *Router {
+	allowed := make(map[string]struct{}, len(allowedUsernames))
+	for _, u := range allowedUsernames {
+		allowed[strings.TrimPrefix(strings.ToLower(u), "@")] = struct{}{}
+	}
 	return &Router{
 		log:               log,
 		sender:            sender,
+		allowedUsernames:  allowed,
 		createBlogger:     createBlogger,
 		listBloggersQuery: listBloggers,
 		listVideosQuery:   listVideos,
@@ -47,11 +55,24 @@ func NewRouter(
 	}
 }
 
+func (r *Router) isAllowed(username string) bool {
+	if len(r.allowedUsernames) == 0 {
+		return true
+	}
+	_, ok := r.allowedUsernames[strings.ToLower(username)]
+	return ok
+}
+
 func (r *Router) Commands() []tgbotapi.BotCommand {
 	return commands()
 }
 
 func (r *Router) HandleMessage(ctx context.Context, msg *tgbotapi.Message) {
+	if msg.From == nil || !r.isAllowed(msg.From.UserName) {
+		r.send(msg.Chat.ID, "⛔ У вас нет доступа к этому боту.")
+		return
+	}
+
 	if r.handleFSM(ctx, msg) {
 		return
 	}
@@ -62,6 +83,9 @@ func (r *Router) HandleMessage(ctx context.Context, msg *tgbotapi.Message) {
 }
 
 func (r *Router) HandleCallback(ctx context.Context, q *tgbotapi.CallbackQuery) {
+	if q.From == nil || !r.isAllowed(q.From.UserName) {
+		return
+	}
 	r.handleCallback(ctx, q)
 }
 
