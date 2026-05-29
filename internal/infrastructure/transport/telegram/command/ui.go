@@ -33,13 +33,10 @@ func (u *UI) StartKeyboard() tgbotapi.InlineKeyboardMarkup {
 			tgbotapi.NewInlineKeyboardButtonData("1. Добавить ссылку на блогера", "create_blogger"),
 		),
 		tgbotapi.NewInlineKeyboardRow(
-			tgbotapi.NewInlineKeyboardButtonData("2. Список блогеров", "list_bloggers"),
+			tgbotapi.NewInlineKeyboardButtonData("2. Экспорт видео в Excel", "export_videos"),
 		),
 		tgbotapi.NewInlineKeyboardRow(
-			tgbotapi.NewInlineKeyboardButtonData("3. Экспорт видео в Excel", "export_videos"),
-		),
-		tgbotapi.NewInlineKeyboardRow(
-			tgbotapi.NewInlineKeyboardButtonData("4. Анализ видео по ссылке", "start_process_video"),
+			tgbotapi.NewInlineKeyboardButtonData("3. Анализ видео по ссылке", "start_process_video"),
 		),
 	)
 }

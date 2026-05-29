@@ -18,7 +18,6 @@ type Router struct {
 	allowedUsernames map[string]struct{}
 
 	createBlogger     *appcmd.CreateBlogger
-	listBloggersQuery *appquery.ListBloggers
 	listVideosQuery   *appquery.ListVideos
 	startProcessVideo *appcmd.StartProcessVideo
 	resetVideoProcess *appcmd.ResetVideoProcess
@@ -31,7 +30,6 @@ func NewRouter(
 	log *slog.Logger,
 	sender telegram.Sender,
 	createBlogger *appcmd.CreateBlogger,
-	listBloggers *appquery.ListBloggers,
 	listVideos *appquery.ListVideos,
 	startProcessVideo *appcmd.StartProcessVideo,
 	resetVideoProcess *appcmd.ResetVideoProcess,
@@ -46,7 +44,6 @@ func NewRouter(
 		sender:            sender,
 		allowedUsernames:  allowed,
 		createBlogger:     createBlogger,
-		listBloggersQuery: listBloggers,
 		listVideosQuery:   listVideos,
 		startProcessVideo: startProcessVideo,
 		resetVideoProcess: resetVideoProcess,

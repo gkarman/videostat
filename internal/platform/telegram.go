@@ -29,7 +29,6 @@ func NewTelegramBot(log *slog.Logger, cfg *config.Config, db *pgxpool.Pool, d *d
 
 
 	createBloggerCmd := command.NewCreateBlogger(repoBlogger, repoDictionary, d)
-	listBloggersQuery := query.NewListBloggers(repoBloggerRead)
 
 	viralEnricher := analytics.NewViralEnricher()
 	relevantEnricher := analytics.NewRelevanceEnricher()
@@ -48,7 +47,6 @@ func NewTelegramBot(log *slog.Logger, cfg *config.Config, db *pgxpool.Pool, d *d
 		log,
 		bot,
 		createBloggerCmd,
-		listBloggersQuery,
 		listVideosQuery,
 		startProcessVideoCmd,
 		resetVideoProcessCmd,

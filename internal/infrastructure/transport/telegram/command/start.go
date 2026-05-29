@@ -10,8 +10,6 @@ func commands() []tgbotapi.BotCommand {
 	return []tgbotapi.BotCommand{
 		{Command: "start", Description: "Запуск бота"},
 		{Command: "create_blogger", Description: "Создать блогера"},
-		{Command: "list_bloggers", Description: "Список блогеров"},
-		{Command: "list_videos", Description: "Список видео"},
 		{Command: "export_videos", Description: "Экспорт видео"},
 		{Command: "start_process_video", Description: "Обработать видео по ссылке"},
 	}
@@ -29,10 +27,6 @@ func (r *Router) handleCommand(ctx context.Context, msg *tgbotapi.Message) {
 		)
 	case "create_blogger":
 		r.askPlatform(msg.Chat.ID)
-	case "list_bloggers":
-		r.listBloggers(ctx, msg.Chat.ID)
-	case "list_videos":
-		r.listVideos(ctx, msg.Chat.ID)
 	case "export_videos":
 		r.exportVideos(ctx, msg.Chat.ID)
 	case "start_process_video":

@@ -23,6 +23,11 @@ func (r *Router) handleFSM(ctx context.Context, msg *tgbotapi.Message) bool {
 		return false
 	}
 
+	if msg.IsCommand() {
+		r.state.Clear(msg.Chat.ID)
+		return false
+	}
+
 	if st.WaitingVideoURL {
 		videoURL := msg.Text
 		video, err := r.startProcessVideo.GetVideoByURL(ctx, videoURL)
@@ -91,12 +96,6 @@ func (r *Router) handleCallback(ctx context.Context, q *tgbotapi.CallbackQuery) 
 			WaitingURL:   true,
 		})
 		r.send(q.Message.Chat.ID, "Пришли ссылку на блогера")
-
-	case q.Data == "list_bloggers":
-		r.listBloggers(ctx, q.Message.Chat.ID)
-
-	case q.Data == "list_videos":
-		r.listVideos(ctx, q.Message.Chat.ID)
 
 	case q.Data == "export_videos":
 		r.exportVideos(ctx, q.Message.Chat.ID)
