@@ -9,6 +9,7 @@ import (
 	"net/http"
 
 	"github.com/gkarman/demo/internal/infrastructure/llm"
+	"github.com/gkarman/demo/internal/infrastructure/metrics"
 )
 
 const baseURL = "https://api.openai.com/v1/chat/completions"
@@ -23,7 +24,7 @@ func NewPromptGenerator(apiKey, model string) *PromptGenerator {
 	return &PromptGenerator{
 		apiKey: apiKey,
 		model:  model,
-		http:   &http.Client{},
+		http:   &http.Client{Transport: metrics.InstrumentedTransport("openai")},
 	}
 }
 

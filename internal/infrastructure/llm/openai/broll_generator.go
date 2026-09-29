@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/gkarman/demo/internal/domain/blogger"
+	"github.com/gkarman/demo/internal/infrastructure/metrics"
 	"github.com/google/uuid"
 )
 
@@ -52,7 +53,7 @@ func NewBrollGenerator(apiKey, model string) *BrollGenerator {
 	return &BrollGenerator{
 		apiKey: apiKey,
 		model:  model,
-		http:   &http.Client{},
+		http:   &http.Client{Transport: metrics.InstrumentedTransport("openai")},
 	}
 }
 

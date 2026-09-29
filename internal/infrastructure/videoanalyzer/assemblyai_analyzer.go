@@ -8,6 +8,8 @@ import (
 	"io"
 	"net/http"
 	"time"
+
+	"github.com/gkarman/demo/internal/infrastructure/metrics"
 )
 
 const (
@@ -24,7 +26,7 @@ type AssemblyAIAnalyzer struct {
 func NewAssemblyAIAnalyzer(apiKey string) *AssemblyAIAnalyzer {
 	return &AssemblyAIAnalyzer{
 		apiKey: apiKey,
-		client: &http.Client{Timeout: 30 * time.Second},
+		client: &http.Client{Timeout: 30 * time.Second, Transport: metrics.InstrumentedTransport("assemblyai")},
 	}
 }
 

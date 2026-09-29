@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/gkarman/demo/internal/infrastructure/llm"
+	"github.com/gkarman/demo/internal/infrastructure/metrics"
 )
 
 const baseURL = "https://openrouter.ai/api/v1/chat/completions"
@@ -24,7 +25,7 @@ func NewPromptGenerator(apiKey, model string) *PromptGenerator {
 	return &PromptGenerator{
 		apiKey: apiKey,
 		model:  model,
-		http:   &http.Client{},
+		http:   &http.Client{Transport: metrics.InstrumentedTransport("openrouter")},
 	}
 }
 

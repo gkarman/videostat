@@ -4,10 +4,12 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"net/http"
 
 	"github.com/anthropics/anthropic-sdk-go"
 	"github.com/anthropics/anthropic-sdk-go/option"
 	"github.com/gkarman/demo/internal/infrastructure/llm"
+	"github.com/gkarman/demo/internal/infrastructure/metrics"
 )
 
 type PromptGenerator struct {
@@ -17,8 +19,11 @@ type PromptGenerator struct {
 
 func NewPromptGenerator(apiKey, model string) *PromptGenerator {
 	return &PromptGenerator{
-		client: anthropic.NewClient(option.WithAPIKey(apiKey)),
-		model:  model,
+		client: anthropic.NewClient(
+			option.WithAPIKey(apiKey),
+			option.WithHTTPClient(&http.Client{Transport: metrics.InstrumentedTransport("anthropic")}),
+		),
+		model: model,
 	}
 }
 

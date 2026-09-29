@@ -7,6 +7,8 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+
+	"github.com/gkarman/demo/internal/infrastructure/metrics"
 )
 
 type Client struct {
@@ -17,7 +19,7 @@ type Client struct {
 func NewClient(cfg Config) *Client {
 	return &Client{
 		cfg:  cfg,
-		http: &http.Client{},
+		http: &http.Client{Transport: metrics.InstrumentedTransport("apify")},
 	}
 }
 

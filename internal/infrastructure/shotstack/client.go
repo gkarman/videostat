@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/gkarman/demo/internal/application"
+	"github.com/gkarman/demo/internal/infrastructure/metrics"
 )
 
 type Client struct {
@@ -22,7 +23,7 @@ func NewClient(apiKey, baseURL string) *Client {
 	return &Client{
 		apiKey:  apiKey,
 		baseURL: baseURL,
-		http:    &http.Client{Timeout: 30 * time.Second},
+		http:    &http.Client{Timeout: 30 * time.Second, Transport: metrics.InstrumentedTransport("shotstack")},
 	}
 }
 

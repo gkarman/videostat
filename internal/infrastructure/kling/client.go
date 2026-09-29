@@ -14,6 +14,7 @@ import (
 	"time"
 
 	"github.com/gkarman/demo/internal/application"
+	"github.com/gkarman/demo/internal/infrastructure/metrics"
 )
 
 const baseURL = "https://api.klingai.com"
@@ -30,7 +31,7 @@ func NewClient(accessKeyID, secretKey, model string) *Client {
 		accessKeyID: accessKeyID,
 		secretKey:   secretKey,
 		model:       model,
-		http:        &http.Client{Timeout: 30 * time.Second},
+		http:        &http.Client{Timeout: 30 * time.Second, Transport: metrics.InstrumentedTransport("kling")},
 	}
 }
 

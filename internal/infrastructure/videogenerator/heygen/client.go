@@ -10,13 +10,14 @@ import (
 	"time"
 
 	"github.com/gkarman/demo/internal/application"
+	"github.com/gkarman/demo/internal/infrastructure/metrics"
 )
 
 const (
-	baseURL         = "https://api.heygen.com"
-	videoWidth      = 1280
-	videoHeight     = 720
-	httpTimeout     = 30 * time.Second
+	baseURL     = "https://api.heygen.com"
+	videoWidth  = 1280
+	videoHeight = 720
+	httpTimeout = 30 * time.Second
 )
 
 type Client struct {
@@ -31,7 +32,7 @@ func NewClient(apiKey, avatarID, voiceID string) *Client {
 		apiKey:   apiKey,
 		avatarID: avatarID,
 		voiceID:  voiceID,
-		http:     &http.Client{Timeout: httpTimeout},
+		http:     &http.Client{Timeout: httpTimeout, Transport: metrics.InstrumentedTransport("heygen")},
 	}
 }
 

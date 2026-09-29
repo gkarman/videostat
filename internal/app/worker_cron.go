@@ -5,8 +5,10 @@ import (
 	"fmt"
 
 	"github.com/gkarman/demo/internal/config"
+	"github.com/gkarman/demo/internal/infrastructure/metrics"
 	"github.com/gkarman/demo/internal/platform"
 	cronworker "github.com/gkarman/demo/internal/worker/cron"
+	"github.com/prometheus/client_golang/prometheus"
 )
 
 func NewWorkerCron(ctx context.Context) (*cronworker.Worker, error) {
@@ -46,6 +48,8 @@ func NewWorkerCron(ctx context.Context) (*cronworker.Worker, error) {
 		return nil, fmt.Errorf("create worker cron: %w", err)
 	}
 
+	// Бизнес-метрики из БД регистрируем только в одном процессе — здесь.
+	prometheus.MustRegister(metrics.NewVideoCollector(db, log))
 	platform.StartMetricsServer(ctx, log, cfg.Metrics.WorkerCronAddr)
 
 	return worker, nil
