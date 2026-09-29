@@ -5,6 +5,7 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/gkarman/demo/internal/infrastructure/metrics"
 	"github.com/go-chi/chi/v5"
 	chimiddleware "github.com/go-chi/chi/v5/middleware"
 	"github.com/prometheus/client_golang/prometheus"
@@ -12,7 +13,7 @@ import (
 )
 
 // promauto сразу регистрирует метрики в стандартном реестре,
-// который отдаёт promhttp.Handler() на /metrics.
+// который отдаёт metrics.Handler() на /metrics.
 var (
 	// Counter: только растёт. Метки позволяют разрезать по методу, маршруту и статусу.
 	httpRequestsTotal = promauto.NewCounterVec(
@@ -61,7 +62,7 @@ func Metrics() func(next http.Handler) http.Handler {
 			route := routePattern(r)
 
 			httpRequestsTotal.WithLabelValues(r.Method, route, strconv.Itoa(status)).Inc()
-			httpRequestDuration.WithLabelValues(r.Method, route).Observe(time.Since(start).Seconds())
+			metrics.ObserveWithTrace(r.Context(), httpRequestDuration.WithLabelValues(r.Method, route), time.Since(start).Seconds())
 		})
 	}
 }

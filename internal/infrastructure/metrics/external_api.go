@@ -61,7 +61,7 @@ func (t *instrumentedTransport) RoundTrip(req *http.Request) (*http.Response, er
 		status = strconv.Itoa(resp.StatusCode)
 	}
 	externalAPIRequestsTotal.WithLabelValues(t.provider, status).Inc()
-	externalAPIRequestDuration.WithLabelValues(t.provider).Observe(time.Since(start).Seconds())
+	ObserveWithTrace(req.Context(), externalAPIRequestDuration.WithLabelValues(t.provider), time.Since(start).Seconds())
 
 	return resp, err
 }

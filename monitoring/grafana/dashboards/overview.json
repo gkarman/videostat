@@ -6,7 +6,7 @@
   ],
   "timezone": "browser",
   "schemaVersion": 41,
-  "version": 2,
+  "version": 3,
   "editable": true,
   "refresh": "30s",
   "time": {
@@ -720,7 +720,8 @@
             "uid": "prometheus"
           },
           "expr": "histogram_quantile(0.95, sum by (le, event_type) (rate(worker_message_duration_seconds_bucket[$__rate_interval])))",
-          "legendFormat": "{{event_type}}"
+          "legendFormat": "{{event_type}}",
+          "exemplar": true
         }
       ],
       "fieldConfig": {
@@ -955,7 +956,8 @@
             "uid": "prometheus"
           },
           "expr": "histogram_quantile(0.95, sum by (le, task) (rate(cron_job_duration_seconds_bucket[$__rate_interval])))",
-          "legendFormat": "{{task}}"
+          "legendFormat": "{{task}}",
+          "exemplar": true
         }
       ],
       "fieldConfig": {
@@ -1121,7 +1123,8 @@
             "uid": "prometheus"
           },
           "expr": "histogram_quantile(0.95, sum by (le, provider) (rate(external_api_request_duration_seconds_bucket[$__rate_interval])))",
-          "legendFormat": "{{provider}}"
+          "legendFormat": "{{provider}}",
+          "exemplar": true
         }
       ],
       "fieldConfig": {

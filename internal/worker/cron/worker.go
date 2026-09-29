@@ -14,6 +14,7 @@ import (
 	sharedapify "github.com/gkarman/demo/internal/infrastructure/apify"
 	"github.com/gkarman/demo/internal/infrastructure/dispatcher"
 	"github.com/gkarman/demo/internal/infrastructure/logger"
+	"github.com/gkarman/demo/internal/infrastructure/metrics"
 	"github.com/gkarman/demo/internal/infrastructure/repository/blogger"
 	apifysearcher "github.com/gkarman/demo/internal/infrastructure/videosearcher/apify"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -129,18 +130,19 @@ func (w *Worker) registerJobs() error {
 func (w *Worker) runJob(name string, fn func(context.Context) error) {
 	ctx, span := tracer.Start(w.ctx, "cron "+name, trace.WithNewRoot())
 	defer span.End()
+	ctx = logger.WithTraceID(ctx)
 
 	start := time.Now()
 	result := "error" // если fn запаникует, запуск засчитается как ошибка (панику перехватит cron.Recover)
 	defer func() {
 		jobRunsTotal.WithLabelValues(name, result).Inc()
-		jobDuration.WithLabelValues(name).Observe(time.Since(start).Seconds())
+		metrics.ObserveWithTrace(ctx, jobDuration.WithLabelValues(name), time.Since(start).Seconds())
 	}()
 
 	if err := fn(ctx); err != nil {
 		span.RecordError(err)
 		span.SetStatus(codes.Error, err.Error())
-		w.log.Error("cron job failed", "job", name, "error", err)
+		logger.FromContext(ctx).Error("cron job failed", "job", name, "error", err)
 		return
 	}
 
@@ -149,7 +151,7 @@ func (w *Worker) runJob(name string, fn func(context.Context) error) {
 }
 
 func (w *Worker) refreshAllBloggers(ctx context.Context) error {
-	w.log.Info("cron: refreshAllBloggers started")
+	logger.FromContext(ctx).Info("cron: refreshAllBloggers started")
 	bloggerRepo := blogger.NewPostgres(w.db)
 	videoSearcher := apifysearcher.NewVideoSearcher(w.apifyClient)
 	fetchVideoCmd := command.NewFetchBloggerVideos(bloggerRepo, videoSearcher)
@@ -163,7 +165,7 @@ func (w *Worker) refreshAllBloggers(ctx context.Context) error {
 }
 
 func (w *Worker) pollBrollGenerations(ctx context.Context) error {
-	w.log.Info("polling broll generations...")
+	logger.FromContext(ctx).Info("polling broll generations...")
 	repo := blogger.NewPostgres(w.db)
 	composeCmd := command.NewComposeFinalVideo(repo, w.videoComposer)
 	pollCmd := command.NewPollBrollGenerations(repo, w.brollVideoGenerator, composeCmd)
@@ -171,12 +173,12 @@ func (w *Worker) pollBrollGenerations(ctx context.Context) error {
 	if err := pollCmd.Execute(ctx); err != nil {
 		return fmt.Errorf("poll broll generations: %w", err)
 	}
-	w.log.Info("polling broll generations done")
+	logger.FromContext(ctx).Info("polling broll generations done")
 	return nil
 }
 
 func (w *Worker) pollCompositions(ctx context.Context) error {
-	w.log.Info("polling compositions...")
+	logger.FromContext(ctx).Info("polling compositions...")
 	repo := blogger.NewPostgres(w.db)
 
 	disp := dispatcher.New()
@@ -187,13 +189,13 @@ func (w *Worker) pollCompositions(ctx context.Context) error {
 	if err := pollCmd.Execute(ctx); err != nil {
 		return fmt.Errorf("poll compositions: %w", err)
 	}
-	w.log.Info("polling compositions done")
+	logger.FromContext(ctx).Info("polling compositions done")
 	return nil
 }
 
 // Ошибки по отдельным видео только логируются: задача в целом отработала.
 func (w *Worker) retryPendingBrollSubmissions(ctx context.Context) error {
-	w.log.Info("cron: retryPendingBrollSubmissions started")
+	logger.FromContext(ctx).Info("cron: retryPendingBrollSubmissions started")
 	repo := blogger.NewPostgres(w.db)
 	videoIDs, err := repo.ListVideosWithPendingBrollSegments(ctx)
 	if err != nil {
@@ -202,11 +204,11 @@ func (w *Worker) retryPendingBrollSubmissions(ctx context.Context) error {
 	if len(videoIDs) == 0 {
 		return nil
 	}
-	w.log.Info("retrying pending broll submissions", "videos", len(videoIDs))
+	logger.FromContext(ctx).Info("retrying pending broll submissions", "videos", len(videoIDs))
 	submitCmd := command.NewSubmitBrollGenerations(repo, w.brollVideoGenerator)
 	for _, videoID := range videoIDs {
 		if err := submitCmd.Run(ctx, reqdto.SubmitBrollGenerations{VideoID: videoID}); err != nil {
-			w.log.Error("failed to submit broll generations", "video_id", videoID, "error", err)
+			logger.FromContext(ctx).Error("failed to submit broll generations", "video_id", videoID, "error", err)
 		}
 	}
 	return nil
@@ -214,7 +216,7 @@ func (w *Worker) retryPendingBrollSubmissions(ctx context.Context) error {
 
 // Ошибки по отдельным видео только логируются: задача в целом отработала.
 func (w *Worker) triggerPendingCompositions(ctx context.Context) error {
-	w.log.Info("cron: triggerPendingCompositions started")
+	logger.FromContext(ctx).Info("cron: triggerPendingCompositions started")
 	repo := blogger.NewPostgres(w.db)
 	videoIDs, err := repo.ListVideosReadyToCompose(ctx)
 	if err != nil {
@@ -223,20 +225,20 @@ func (w *Worker) triggerPendingCompositions(ctx context.Context) error {
 	if len(videoIDs) == 0 {
 		return nil
 	}
-	w.log.Info("found videos ready to compose", "count", len(videoIDs))
+	logger.FromContext(ctx).Info("found videos ready to compose", "count", len(videoIDs))
 	composeCmd := command.NewComposeFinalVideo(repo, w.videoComposer)
 	for _, videoID := range videoIDs {
 		if err := composeCmd.Run(ctx, reqdto.ComposeFinalVideo{VideoID: videoID}); err != nil {
-			w.log.Error("failed to compose video", "video_id", videoID, "error", err)
+			logger.FromContext(ctx).Error("failed to compose video", "video_id", videoID, "error", err)
 		} else {
-			w.log.Info("composition triggered", "video_id", videoID)
+			logger.FromContext(ctx).Info("composition triggered", "video_id", videoID)
 		}
 	}
 	return nil
 }
 
 func (w *Worker) pollVideoGenerations(ctx context.Context) error {
-	w.log.Info("polling video generations...")
+	logger.FromContext(ctx).Info("polling video generations...")
 	bloggerRepo := blogger.NewPostgres(w.db)
 
 	disp := dispatcher.New()
@@ -249,6 +251,6 @@ func (w *Worker) pollVideoGenerations(ctx context.Context) error {
 	if err := pollCmd.Execute(ctx); err != nil {
 		return fmt.Errorf("poll video generations: %w", err)
 	}
-	w.log.Info("polling video generations done")
+	logger.FromContext(ctx).Info("polling video generations done")
 	return nil
 }

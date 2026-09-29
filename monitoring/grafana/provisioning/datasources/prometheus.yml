@@ -11,12 +11,25 @@ datasources:
     # Имя сервиса из docker-compose — контейнеры видят друг друга по имени
     url: http://prometheus:9090
     isDefault: true
+    jsonData:
+      # Exemplar с меткой trace_id → ссылка на трейс в Tempo (точки на графиках гистограмм).
+      exemplarTraceIdDestinations:
+        - name: trace_id
+          datasourceUid: tempo
 
   - name: Loki
     type: loki
     uid: loki
     access: proxy
     url: http://loki:3100
+    jsonData:
+      # Derived field: находит trace_id в строке лога и делает из него ссылку на трейс в Tempo.
+      derivedFields:
+        - name: trace_id
+          matcherRegex: '"trace_id":"(\w+)"'
+          datasourceUid: tempo
+          url: "$${__value.raw}"
+          urlDisplayLabel: "Открыть трейс"
 
   - name: Tempo
     type: tempo
@@ -24,7 +37,7 @@ datasources:
     access: proxy
     url: http://tempo:3200
     jsonData:
-      # Кнопка «Logs for this span»: открывает Loki с логами того же сервиса за время спана.
+      # Кнопка «Logs for this span»: открывает Loki с логами того же сервиса и того же trace_id.
       # service.name в трейсах = service в Loki = job в Prometheus.
       tracesToLogsV2:
         datasourceUid: loki
@@ -33,3 +46,5 @@ datasources:
         tags:
           - key: service.name
             value: service
+        # Искать логи именно этого трейса (по trace_id в тексте строки), а не просто за то же время.
+        filterByTraceID: true

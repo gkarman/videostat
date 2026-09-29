@@ -1,6 +1,10 @@
 package logger
 
-import "context"
+import (
+	"context"
+
+	"go.opentelemetry.io/otel/trace"
+)
 
 // Имена полей логов — одинаковые во всех сервисах и в snake_case (как в событиях RabbitMQ).
 // Иначе запрос в Loki {env="local"} | json | video_id="..." найдёт не все строки.
@@ -10,6 +14,7 @@ const (
 	KeyBloggerID = "blogger_id"
 	KeyEventType = "event_type"
 	KeyEventID   = "event_id"
+	KeyTraceID   = "trace_id"
 )
 
 type fieldKey string
@@ -28,4 +33,15 @@ func WithField(ctx context.Context, key, value string) context.Context {
 
 	ctx = context.WithValue(ctx, fieldKey(key), value)
 	return WithLogger(ctx, FromContext(ctx).With(key, value))
+}
+
+// WithTraceID добавляет в логгер контекста trace_id текущего спана. Вызывается там, где начинается
+// спан (HTTP-запрос, обработка события, запуск cron, сообщение в боте): все логи внутри получат
+// trace_id, и в Grafana из строки лога можно перейти в трейс, а из трейса — к его логам.
+func WithTraceID(ctx context.Context) context.Context {
+	sc := trace.SpanContextFromContext(ctx)
+	if !sc.IsValid() {
+		return ctx // трейсинг выключен или спана нет
+	}
+	return WithField(ctx, KeyTraceID, sc.TraceID().String())
 }

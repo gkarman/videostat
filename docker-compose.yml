@@ -97,6 +97,7 @@ services:
       - --config.file=/etc/prometheus/prometheus.yml
       - --storage.tsdb.retention.time=15d
       - --web.enable-lifecycle   # позволяет перечитать конфиг без рестарта: POST /-/reload
+      - --enable-feature=exemplar-storage   # хранить exemplars (trace_id у значений гистограмм)
     extra_hosts:
       - "host.docker.internal:host-gateway"   # доступ к сервисам, запущенным на хосте
 

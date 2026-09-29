@@ -5,8 +5,8 @@ import (
 	"log/slog"
 	"time"
 
+	"github.com/gkarman/demo/internal/infrastructure/metrics"
 	"github.com/gkarman/demo/internal/infrastructure/transport/http"
-	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
 
 // StartMetricsServer поднимает HTTP-сервер, который отдаёт только /metrics,
@@ -14,7 +14,7 @@ import (
 func StartMetricsServer(ctx context.Context, log *slog.Logger, addr string) {
 	server := http.NewServer(
 		log.With("component", "metrics"),
-		promhttp.Handler(),
+		metrics.Handler(),
 		http.Config{
 			Addr:         addr,
 			ReadTimeout:  5 * time.Second,

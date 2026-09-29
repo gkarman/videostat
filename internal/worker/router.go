@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/gkarman/demo/internal/infrastructure/logger"
+	"github.com/gkarman/demo/internal/infrastructure/metrics"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/codes"
@@ -60,6 +61,7 @@ func (r *Router) Handle(ctx context.Context, eventType string, body []byte) erro
 		),
 	)
 	defer span.End()
+	ctx = logger.WithTraceID(ctx)
 
 	err := h(ctx, body)
 
@@ -70,7 +72,7 @@ func (r *Router) Handle(ctx context.Context, eventType string, body []byte) erro
 		span.SetStatus(codes.Error, err.Error())
 	}
 	messagesTotal.WithLabelValues(eventType, result).Inc()
-	messageDuration.WithLabelValues(eventType).Observe(time.Since(start).Seconds())
+	metrics.ObserveWithTrace(ctx, messageDuration.WithLabelValues(eventType), time.Since(start).Seconds())
 
 	return err
 }

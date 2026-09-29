@@ -4,16 +4,16 @@ import (
 	"log/slog"
 
 	blogger_cmd "github.com/gkarman/demo/internal/application/blogger/command"
+	sharedapify "github.com/gkarman/demo/internal/infrastructure/apify"
 	"github.com/gkarman/demo/internal/infrastructure/dispatcher"
+	"github.com/gkarman/demo/internal/infrastructure/metrics"
 	blogger_repo "github.com/gkarman/demo/internal/infrastructure/repository/blogger"
 	"github.com/gkarman/demo/internal/infrastructure/transport/http/handler"
 	blogger_handler "github.com/gkarman/demo/internal/infrastructure/transport/http/handler/blogger"
 	middleware2 "github.com/gkarman/demo/internal/infrastructure/transport/http/middleware"
-	sharedapify "github.com/gkarman/demo/internal/infrastructure/apify"
 	videoapify "github.com/gkarman/demo/internal/infrastructure/videosearcher/apify"
 	"github.com/go-chi/chi/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
-	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
 
 func NewRouter(log *slog.Logger, db *pgxpool.Pool, d *dispatcher.Dispatcher, apify *sharedapify.Client) *chi.Mux {
@@ -36,7 +36,7 @@ func registerHomeRoutes(r *chi.Mux) {
 
 // registerMetricsRoutes отдаёт метрики в формате Prometheus: он сам приходит сюда за ними.
 func registerMetricsRoutes(r *chi.Mux) {
-	r.Handle("/metrics", promhttp.Handler())
+	r.Handle("/metrics", metrics.Handler())
 }
 
 func registerVideoRoutes(r *chi.Mux, db *pgxpool.Pool, _ *dispatcher.Dispatcher, a *sharedapify.Client) {

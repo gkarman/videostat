@@ -7,6 +7,7 @@ import (
 
 	appcmd "github.com/gkarman/demo/internal/application/blogger/command"
 	appquery "github.com/gkarman/demo/internal/application/blogger/query"
+	"github.com/gkarman/demo/internal/infrastructure/logger"
 	"github.com/gkarman/demo/internal/infrastructure/transport/telegram"
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"go.opentelemetry.io/otel"
@@ -76,6 +77,7 @@ func (r *Router) HandleMessage(ctx context.Context, msg *tgbotapi.Message) {
 	}
 	ctx, span := tracer.Start(ctx, spanName, trace.WithNewRoot(), trace.WithSpanKind(trace.SpanKindServer))
 	defer span.End()
+	ctx = logger.WithTraceID(logger.WithLogger(ctx, r.log))
 
 	if msg.From == nil || !r.isAllowed(msg.From.UserName) {
 		r.send(msg.Chat.ID, "⛔ У вас нет доступа к этому боту.")
@@ -94,6 +96,7 @@ func (r *Router) HandleMessage(ctx context.Context, msg *tgbotapi.Message) {
 func (r *Router) HandleCallback(ctx context.Context, q *tgbotapi.CallbackQuery) {
 	ctx, span := tracer.Start(ctx, "telegram callback", trace.WithNewRoot(), trace.WithSpanKind(trace.SpanKindServer))
 	defer span.End()
+	ctx = logger.WithTraceID(logger.WithLogger(ctx, r.log))
 
 	if q.From == nil || !r.isAllowed(q.From.UserName) {
 		return
