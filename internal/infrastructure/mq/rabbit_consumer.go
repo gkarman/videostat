@@ -7,6 +7,7 @@ import (
 	"time"
 
 	amqp "github.com/rabbitmq/amqp091-go"
+	"go.opentelemetry.io/otel"
 )
 
 type RabbitConsumer struct {
@@ -14,7 +15,7 @@ type RabbitConsumer struct {
 	queue    string
 	bindings []string
 	log      *slog.Logger
-	backoff time.Duration
+	backoff  time.Duration
 }
 
 func NewRabbitConsumer(cfg Config, queue string, bindings []string, log *slog.Logger) *RabbitConsumer {
@@ -27,7 +28,10 @@ func NewRabbitConsumer(cfg Config, queue string, bindings []string, log *slog.Lo
 	}
 }
 
-func (c *RabbitConsumer) Consume(ctx context.Context, handler func([]byte) error) error {
+// MessageHandler обрабатывает сообщение. ctx несёт контекст трейса отправителя (из заголовка traceparent).
+type MessageHandler func(ctx context.Context, body []byte) error
+
+func (c *RabbitConsumer) Consume(ctx context.Context, handler MessageHandler) error {
 	for {
 		c.log.Info("rabbit consume loop start")
 
@@ -53,7 +57,7 @@ func (c *RabbitConsumer) Consume(ctx context.Context, handler func([]byte) error
 	}
 }
 
-func (c *RabbitConsumer) consumeOnce(ctx context.Context, handler func([]byte) error) error {
+func (c *RabbitConsumer) consumeOnce(ctx context.Context, handler MessageHandler) error {
 	dsn := fmt.Sprintf("amqp://%s:%s@%s:%s/",
 		c.cfg.User,
 		c.cfg.Password,
@@ -85,7 +89,6 @@ func (c *RabbitConsumer) consumeOnce(ctx context.Context, handler func([]byte) e
 			c.log.Error("rabbit channel close", "error", err)
 		}
 	}()
-
 
 	if err := ch.Qos(1, 0, false); err != nil {
 		return fmt.Errorf("qos: %w", err)
@@ -145,7 +148,11 @@ func (c *RabbitConsumer) consumeOnce(ctx context.Context, handler func([]byte) e
 
 			c.log.Debug("message received", "routing_key", msg.RoutingKey)
 
-			if err := handler(msg.Body); err != nil {
+			// Контекст сообщения строим от Background, а не от ctx консьюмера: при остановке воркера
+			// начатая обработка не должна обрываться (как и раньше). Из заголовков достаём traceparent.
+			msgCtx := otel.GetTextMapPropagator().Extract(context.Background(), headersCarrier(msg.Headers))
+
+			if err := handler(msgCtx, msg.Body); err != nil {
 				c.log.Error("handler failed", "error", err)
 				_ = msg.Nack(false, true)
 				continue

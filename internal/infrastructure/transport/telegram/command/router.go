@@ -9,7 +9,11 @@ import (
 	appquery "github.com/gkarman/demo/internal/application/blogger/query"
 	"github.com/gkarman/demo/internal/infrastructure/transport/telegram"
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/trace"
 )
+
+var tracer = otel.Tracer("github.com/gkarman/demo/internal/infrastructure/transport/telegram")
 
 type Router struct {
 	log *slog.Logger
@@ -65,6 +69,14 @@ func (r *Router) Commands() []tgbotapi.BotCommand {
 }
 
 func (r *Router) HandleMessage(ctx context.Context, msg *tgbotapi.Message) {
+	// Корневой спан: с сообщения в боте начинается цепочка (команда → событие в RabbitMQ → воркеры).
+	spanName := "telegram message"
+	if msg.IsCommand() {
+		spanName = "telegram /" + msg.Command()
+	}
+	ctx, span := tracer.Start(ctx, spanName, trace.WithNewRoot(), trace.WithSpanKind(trace.SpanKindServer))
+	defer span.End()
+
 	if msg.From == nil || !r.isAllowed(msg.From.UserName) {
 		r.send(msg.Chat.ID, "⛔ У вас нет доступа к этому боту.")
 		return
@@ -80,6 +92,9 @@ func (r *Router) HandleMessage(ctx context.Context, msg *tgbotapi.Message) {
 }
 
 func (r *Router) HandleCallback(ctx context.Context, q *tgbotapi.CallbackQuery) {
+	ctx, span := tracer.Start(ctx, "telegram callback", trace.WithNewRoot(), trace.WithSpanKind(trace.SpanKindServer))
+	defer span.End()
+
 	if q.From == nil || !r.isAllowed(q.From.UserName) {
 		return
 	}

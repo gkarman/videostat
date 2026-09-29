@@ -33,7 +33,9 @@ func (r *Router) Register(eventType string, handler Handler) {
 	r.handlers[eventType] = handler
 }
 
-func (r *Router) Handle(eventType string, body []byte) error {
+// Handle обрабатывает событие. ctx приходит от консьюмера и содержит контекст трейса
+// отправителя — спан обработки станет его продолжением.
+func (r *Router) Handle(ctx context.Context, eventType string, body []byte) error {
 	h, ok := r.handlers[eventType]
 	if !ok {
 		r.log.Debug("no handler for event type", "event_type", eventType)
@@ -43,10 +45,10 @@ func (r *Router) Handle(eventType string, body []byte) error {
 
 	start := time.Now()
 	ids := parseEventIDs(body)
-	ctx := r.eventContext(eventType, ids)
+	ctx = r.eventContext(ctx, eventType, ids)
 
-	// Спан на обработку сообщения. Пока каждое сообщение — новый трейс;
-	// чтобы продолжать трейс отправителя, нужен traceparent в заголовках AMQP (шаг T2).
+	// Спан на обработку сообщения. Если в ctx есть трейс отправителя (traceparent из заголовков AMQP) —
+	// это продолжение того же трейса; если нет (сообщение от старой версии) — начнётся новый.
 	ctx, span := tracer.Start(ctx, "handle "+eventType,
 		trace.WithSpanKind(trace.SpanKindConsumer),
 		trace.WithAttributes(
@@ -91,8 +93,8 @@ func parseEventIDs(body []byte) eventIDs {
 // eventContext кладёт в логгер поля события (тип, id, video_id / blogger_id).
 // Все логи обработчика и вызванных им команд получат их автоматически — по video_id
 // в Loki находится весь путь видео через api, worker_core, worker_cron и worker_notify.
-func (r *Router) eventContext(eventType string, ids eventIDs) context.Context {
-	ctx := logger.WithLogger(context.Background(), r.log)
+func (r *Router) eventContext(ctx context.Context, eventType string, ids eventIDs) context.Context {
+	ctx = logger.WithLogger(ctx, r.log)
 	ctx = logger.WithField(ctx, logger.KeyEventType, eventType)
 	ctx = logger.WithField(ctx, logger.KeyEventID, ids.EventID)
 	ctx = logger.WithField(ctx, logger.KeyVideoID, ids.VideoID)

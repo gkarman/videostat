@@ -7,8 +7,11 @@ import (
 	"time"
 
 	amqp "github.com/rabbitmq/amqp091-go"
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/codes"
+	"go.opentelemetry.io/otel/trace"
 )
-
 
 type RabbitPublisher struct {
 	cfg    Config
@@ -43,7 +46,6 @@ func (p *RabbitPublisher) connect() (err error) {
 	if err != nil {
 		return err
 	}
-
 
 	defer func() {
 		if err != nil {
@@ -122,6 +124,31 @@ func (p *RabbitPublisher) reconnectLoop() {
 }
 
 func (p *RabbitPublisher) Publish(ctx context.Context, key string, body []byte) error {
+	// Спан публикации — дочерний к текущей операции (команда в боте, HTTP-запрос, обработка события).
+	ctx, span := tracer.Start(ctx, "publish "+key,
+		trace.WithSpanKind(trace.SpanKindProducer),
+		trace.WithAttributes(
+			attribute.String("messaging.system", "rabbitmq"),
+			attribute.String("messaging.destination.name", p.cfg.Exchange),
+			attribute.String("messaging.rabbitmq.destination.routing_key", key),
+		),
+	)
+	defer span.End()
+
+	// traceparent (id трейса + id этого спана) — в заголовки сообщения.
+	// Consumer прочитает его и продолжит тот же трейс.
+	headers := amqp.Table{}
+	otel.GetTextMapPropagator().Inject(ctx, headersCarrier(headers))
+
+	err := p.publish(ctx, key, body, headers)
+	if err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, err.Error())
+	}
+	return err
+}
+
+func (p *RabbitPublisher) publish(ctx context.Context, key string, body []byte, headers amqp.Table) error {
 	p.mu.RLock()
 	defer p.mu.RUnlock()
 
@@ -141,6 +168,7 @@ func (p *RabbitPublisher) Publish(ctx context.Context, key string, body []byte) 
 		false,
 		amqp.Publishing{
 			ContentType: "application/json",
+			Headers:     headers,
 			Body:        body,
 		},
 	)

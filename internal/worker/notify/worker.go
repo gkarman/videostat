@@ -40,7 +40,7 @@ func (w *Worker) Run(ctx context.Context) error {
 	return nil
 }
 
-func (w *Worker) handleMessage(body []byte) error {
+func (w *Worker) handleMessage(ctx context.Context, body []byte) error {
 	var base struct {
 		EventType string `json:"event_type"`
 	}
@@ -49,5 +49,5 @@ func (w *Worker) handleMessage(body []byte) error {
 		return err
 	}
 
-	return w.router.Handle(base.EventType, body)
+	return w.router.Handle(ctx, base.EventType, body)
 }
