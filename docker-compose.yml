@@ -15,6 +15,10 @@ services:
   rabbitmq:
     image: rabbitmq:4.2.4-management
     container_name: videostat-rabbitmq
+    # RabbitMQ хранит данные в папке rabbit@<hostname>. Без фиксированного hostname каждый
+    # make down/up создаёт контейнер со случайным hostname → новый узел с пустыми данными,
+    # и сообщения, лежавшие в очередях, теряются.
+    hostname: rabbitmq
     restart: always
     ports:
       - "5672:5672"   # AMQP
