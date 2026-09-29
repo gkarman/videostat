@@ -13,6 +13,7 @@ import (
 	videoapify "github.com/gkarman/demo/internal/infrastructure/videosearcher/apify"
 	"github.com/go-chi/chi/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
 
 func NewRouter(log *slog.Logger, db *pgxpool.Pool, d *dispatcher.Dispatcher, apify *sharedapify.Client) *chi.Mux {
@@ -20,6 +21,7 @@ func NewRouter(log *slog.Logger, db *pgxpool.Pool, d *dispatcher.Dispatcher, api
 	r.Use(middleware2.Logger(log))
 	r.Use(middleware2.Recovery())
 	registerHomeRoutes(r)
+	registerMetricsRoutes(r)
 	registerVideoRoutes(r, db, d, apify)
 	return r
 }
@@ -27,6 +29,11 @@ func NewRouter(log *slog.Logger, db *pgxpool.Pool, d *dispatcher.Dispatcher, api
 func registerHomeRoutes(r *chi.Mux) {
 	homeHandler := handler.NewHomeHandler()
 	r.Get("/", homeHandler.Home)
+}
+
+// registerMetricsRoutes отдаёт метрики в формате Prometheus: он сам приходит сюда за ними.
+func registerMetricsRoutes(r *chi.Mux) {
+	r.Handle("/metrics", promhttp.Handler())
 }
 
 func registerVideoRoutes(r *chi.Mux, db *pgxpool.Pool, _ *dispatcher.Dispatcher, a *sharedapify.Client) {

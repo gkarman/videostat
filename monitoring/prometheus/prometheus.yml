@@ -1,0 +1,18 @@
+# Глобальные настройки: как часто Prometheus опрашивает цели (scrape)
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+# Список целей, с которых собираем метрики.
+# Каждая цель должна отдавать метрики по HTTP в текстовом формате (обычно /metrics).
+scrape_configs:
+  # Prometheus собирает метрики сам с себя — удобно проверить, что всё работает
+  - job_name: prometheus
+    static_configs:
+      - targets: ["localhost:9090"]
+
+  # Наш HTTP API.
+  # Он запускается на хосте (make run), поэтому из контейнера адрес — host.docker.internal
+  - job_name: api
+    static_configs:
+      - targets: ["host.docker.internal:8081"]

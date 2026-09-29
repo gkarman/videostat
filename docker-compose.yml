@@ -83,7 +83,40 @@ services:
       "
     restart: on-failure
 
+  prometheus:
+    image: prom/prometheus:v3.5.0
+    container_name: videostat-prometheus
+    restart: always
+    ports:
+      - "9090:9090"   # Web UI + API
+    volumes:
+      - ./monitoring/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus_data:/prometheus
+    command:
+      - --config.file=/etc/prometheus/prometheus.yml
+      - --storage.tsdb.retention.time=15d
+      - --web.enable-lifecycle   # позволяет перечитать конфиг без рестарта: POST /-/reload
+    extra_hosts:
+      - "host.docker.internal:host-gateway"   # доступ к сервисам, запущенным на хосте
+
+  grafana:
+    image: grafana/grafana:12.1.0
+    container_name: videostat-grafana
+    restart: always
+    depends_on:
+      - prometheus
+    ports:
+      - "3000:3000"
+    environment:
+      GF_SECURITY_ADMIN_USER: ${GRAFANA_USER:-admin}
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_PASS:-admin}
+    volumes:
+      - ./monitoring/grafana/provisioning:/etc/grafana/provisioning:ro
+      - grafana_data:/var/lib/grafana
+
 volumes:
   db_data:
   rabbitmq_data:
   minio_data:
+  prometheus_data:
+  grafana_data:

@@ -1,0 +1,11 @@
+# Provisioning: Grafana при старте сама создаёт источник данных,
+# чтобы не настраивать его руками в UI
+apiVersion: 1
+
+datasources:
+  - name: Prometheus
+    type: prometheus
+    access: proxy
+    # Имя сервиса из docker-compose — контейнеры видят друг друга по имени
+    url: http://prometheus:9090
+    isDefault: true
