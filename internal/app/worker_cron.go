@@ -46,5 +46,7 @@ func NewWorkerCron(ctx context.Context) (*cronworker.Worker, error) {
 		return nil, fmt.Errorf("create worker cron: %w", err)
 	}
 
+	platform.StartMetricsServer(ctx, log, cfg.Metrics.WorkerCronAddr)
+
 	return worker, nil
 }

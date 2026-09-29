@@ -21,6 +21,7 @@ type Config struct {
 	HeyGen      HeyGenConfig
 	Kling       KlingConfig
 	Shotstack   ShotstackConfig
+	Metrics     MetricsConfig
 }
 
 type DBConfig struct {
@@ -49,6 +50,14 @@ type ServerHttpConfig struct {
 	Addr                string `env:"SERVER_HTTP_ADDR" env-default:":8080"`
 	ReadTimeoutSeconds  int    `env:"SERVER_HTTP_READ_TIMEOUT_SECONDS" env-default:"10"`
 	WriteTimeoutSeconds int    `env:"SERVER_HTTP_WRITE_TIMEOUT_SECONDS" env-default:"10"`
+}
+
+// MetricsConfig — адреса, на которых воркеры отдают /metrics для Prometheus.
+// У каждого воркера свой порт, т.к. они могут работать одновременно на одной машине.
+type MetricsConfig struct {
+	WorkerCoreAddr   string `env:"METRICS_WORKER_CORE_ADDR" env-default:"localhost:9101"`
+	WorkerNotifyAddr string `env:"METRICS_WORKER_NOTIFY_ADDR" env-default:"localhost:9102"`
+	WorkerCronAddr   string `env:"METRICS_WORKER_CRON_ADDR" env-default:"localhost:9103"`
 }
 
 type ServerGRPCConfig struct {

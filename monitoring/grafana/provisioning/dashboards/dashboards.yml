@@ -1,0 +1,11 @@
+# Provisioning дашбордов: Grafana при старте загружает все JSON-файлы из указанной папки
+apiVersion: 1
+
+providers:
+  - name: videostat
+    folder: Videostat            # папка в интерфейсе Grafana
+    type: file
+    allowUiUpdates: true         # можно править в UI (но источник правды — JSON в git)
+    updateIntervalSeconds: 30    # как часто перечитывать файлы — правки JSON подхватятся без рестарта
+    options:
+      path: /var/lib/grafana/dashboards

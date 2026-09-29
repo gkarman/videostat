@@ -41,5 +41,7 @@ func NewWorkerNotify(ctx context.Context) (*notify.Worker, error) {
 	router := notify.NewRouterWithHandlers(log, tgNotifier)
 	worker := notify.New(log, consumer, router)
 
+	platform.StartMetricsServer(ctx, log, cfg.Metrics.WorkerNotifyAddr)
+
 	return worker, nil
 }

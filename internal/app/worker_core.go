@@ -61,5 +61,7 @@ func NewWorkerCore(ctx context.Context) (*core.Worker, error) {
 	router := core.NewRouterWithHandlers(log, db, apifyClient, analyzer, videoGenerator, brollGenerator, brollVideoGenerator, publisher)
 	worker := core.New(log, consumer, router)
 
+	platform.StartMetricsServer(ctx, log, cfg.Metrics.WorkerCoreAddr)
+
 	return worker, nil
 }

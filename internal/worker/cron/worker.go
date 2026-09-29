@@ -2,6 +2,7 @@ package cron
 
 import (
 	"context"
+	"fmt"
 	"log/slog"
 	"time"
 
@@ -92,32 +93,51 @@ func (w *Worker) Run(ctx context.Context) error {
 }
 
 func (w *Worker) registerJobs() error {
-	skip := func(fn func()) cron.Job {
-		return cron.NewChain(cron.SkipIfStillRunning(noopCronLogger{})).Then(cron.FuncJob(fn))
+	job := func(name string, fn func() error) cron.Job {
+		run := func() { w.runJob(name, fn) }
+		return cron.NewChain(cron.SkipIfStillRunning(noopCronLogger{})).Then(cron.FuncJob(run))
 	}
 
-	if _, err := w.cron.AddJob("0 3 * * *", skip(w.refreshAllBloggers)); err != nil {
+	if _, err := w.cron.AddJob("0 3 * * *", job("refresh_all_bloggers", w.refreshAllBloggers)); err != nil {
 		return err
 	}
-	if _, err := w.cron.AddJob("*/1 * * * *", skip(w.pollVideoGenerations)); err != nil {
+	if _, err := w.cron.AddJob("*/1 * * * *", job("poll_video_generations", w.pollVideoGenerations)); err != nil {
 		return err
 	}
-	if _, err := w.cron.AddJob("*/1 * * * *", skip(w.pollBrollGenerations)); err != nil {
+	if _, err := w.cron.AddJob("*/1 * * * *", job("poll_broll_generations", w.pollBrollGenerations)); err != nil {
 		return err
 	}
-	if _, err := w.cron.AddJob("*/1 * * * *", skip(w.pollCompositions)); err != nil {
+	if _, err := w.cron.AddJob("*/1 * * * *", job("poll_compositions", w.pollCompositions)); err != nil {
 		return err
 	}
-	if _, err := w.cron.AddJob("*/1 * * * *", skip(w.retryPendingBrollSubmissions)); err != nil {
+	if _, err := w.cron.AddJob("*/1 * * * *", job("retry_pending_broll_submissions", w.retryPendingBrollSubmissions)); err != nil {
 		return err
 	}
-	if _, err := w.cron.AddJob("*/1 * * * *", skip(w.triggerPendingCompositions)); err != nil {
+	if _, err := w.cron.AddJob("*/1 * * * *", job("trigger_pending_compositions", w.triggerPendingCompositions)); err != nil {
 		return err
 	}
 	return nil
 }
 
-func (w *Worker) refreshAllBloggers() {
+// runJob выполняет задачу, логирует ошибку и записывает метрики.
+func (w *Worker) runJob(name string, fn func() error) {
+	start := time.Now()
+	result := "error" // если fn запаникует, запуск засчитается как ошибка (панику перехватит cron.Recover)
+	defer func() {
+		jobRunsTotal.WithLabelValues(name, result).Inc()
+		jobDuration.WithLabelValues(name).Observe(time.Since(start).Seconds())
+	}()
+
+	if err := fn(); err != nil {
+		w.log.Error("cron job failed", "job", name, "error", err)
+		return
+	}
+
+	result = "ok"
+	jobLastSuccess.WithLabelValues(name).SetToCurrentTime()
+}
+
+func (w *Worker) refreshAllBloggers() error {
 	w.log.Info("cron: refreshAllBloggers started")
 	bloggerRepo := blogger.NewPostgres(w.db)
 	videoSearcher := apifysearcher.NewVideoSearcher(w.apifyClient)
@@ -126,24 +146,25 @@ func (w *Worker) refreshAllBloggers() {
 	refreshCmd := command.NewRefreshAllBloggers(bloggerRepo, fetchVideoCmd)
 
 	if err := refreshCmd.Execute(w.ctx); err != nil {
-		w.log.Error("Failed to refresh all Bloggers.", err)
+		return fmt.Errorf("refresh all bloggers: %w", err)
 	}
+	return nil
 }
 
-func (w *Worker) pollBrollGenerations() {
+func (w *Worker) pollBrollGenerations() error {
 	w.log.Info("polling broll generations...")
 	repo := blogger.NewPostgres(w.db)
 	composeCmd := command.NewComposeFinalVideo(repo, w.videoComposer)
 	pollCmd := command.NewPollBrollGenerations(repo, w.brollVideoGenerator, composeCmd)
 
 	if err := pollCmd.Execute(w.ctx); err != nil {
-		w.log.Error("failed to poll broll generations", "error", err)
-	} else {
-		w.log.Info("polling broll generations done")
+		return fmt.Errorf("poll broll generations: %w", err)
 	}
+	w.log.Info("polling broll generations done")
+	return nil
 }
 
-func (w *Worker) pollCompositions() {
+func (w *Worker) pollCompositions() error {
 	w.log.Info("polling compositions...")
 	repo := blogger.NewPostgres(w.db)
 
@@ -153,22 +174,22 @@ func (w *Worker) pollCompositions() {
 	pollCmd := command.NewPollCompositions(repo, w.videoComposer, disp)
 
 	if err := pollCmd.Execute(w.ctx); err != nil {
-		w.log.Error("failed to poll compositions", "error", err)
-	} else {
-		w.log.Info("polling compositions done")
+		return fmt.Errorf("poll compositions: %w", err)
 	}
+	w.log.Info("polling compositions done")
+	return nil
 }
 
-func (w *Worker) retryPendingBrollSubmissions() {
+// Ошибки по отдельным видео только логируются: задача в целом отработала.
+func (w *Worker) retryPendingBrollSubmissions() error {
 	w.log.Info("cron: retryPendingBrollSubmissions started")
 	repo := blogger.NewPostgres(w.db)
 	videoIDs, err := repo.ListVideosWithPendingBrollSegments(w.ctx)
 	if err != nil {
-		w.log.Error("failed to list videos with pending broll segments", "error", err)
-		return
+		return fmt.Errorf("list videos with pending broll segments: %w", err)
 	}
 	if len(videoIDs) == 0 {
-		return
+		return nil
 	}
 	w.log.Info("retrying pending broll submissions", "videos", len(videoIDs))
 	submitCmd := command.NewSubmitBrollGenerations(repo, w.brollVideoGenerator)
@@ -177,18 +198,19 @@ func (w *Worker) retryPendingBrollSubmissions() {
 			w.log.Error("failed to submit broll generations", "videoID", videoID, "error", err)
 		}
 	}
+	return nil
 }
 
-func (w *Worker) triggerPendingCompositions() {
+// Ошибки по отдельным видео только логируются: задача в целом отработала.
+func (w *Worker) triggerPendingCompositions() error {
 	w.log.Info("cron: triggerPendingCompositions started")
 	repo := blogger.NewPostgres(w.db)
 	videoIDs, err := repo.ListVideosReadyToCompose(w.ctx)
 	if err != nil {
-		w.log.Error("failed to list videos ready to compose", "error", err)
-		return
+		return fmt.Errorf("list videos ready to compose: %w", err)
 	}
 	if len(videoIDs) == 0 {
-		return
+		return nil
 	}
 	w.log.Info("found videos ready to compose", "count", len(videoIDs))
 	composeCmd := command.NewComposeFinalVideo(repo, w.videoComposer)
@@ -199,9 +221,10 @@ func (w *Worker) triggerPendingCompositions() {
 			w.log.Info("composition triggered", "videoID", videoID)
 		}
 	}
+	return nil
 }
 
-func (w *Worker) pollVideoGenerations() {
+func (w *Worker) pollVideoGenerations() error {
 	w.log.Info("polling video generations...")
 	bloggerRepo := blogger.NewPostgres(w.db)
 
@@ -213,8 +236,8 @@ func (w *Worker) pollVideoGenerations() {
 	pollCmd := command.NewPollVideoGenerations(bloggerRepo, w.videoGenerator, w.storage, disp, composeCmd)
 
 	if err := pollCmd.Execute(w.ctx); err != nil {
-		w.log.Error("failed to poll video generations", "error", err)
-	} else {
-		w.log.Info("polling video generations done")
+		return fmt.Errorf("poll video generations: %w", err)
 	}
+	w.log.Info("polling video generations done")
+	return nil
 }

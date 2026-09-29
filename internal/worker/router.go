@@ -3,6 +3,7 @@ package worker
 import (
 	"context"
 	"log/slog"
+	"time"
 
 	"github.com/gkarman/demo/internal/infrastructure/logger"
 )
@@ -29,9 +30,20 @@ func (r *Router) Handle(eventType string, body []byte) error {
 	h, ok := r.handlers[eventType]
 	if !ok {
 		r.log.Debug("no handler for event type", "event_type", eventType)
+		messagesTotal.WithLabelValues(eventTypeUnhandled, resultSkipped).Inc()
 		return nil
 	}
 
+	start := time.Now()
 	ctx := logger.WithLogger(context.Background(), r.log)
-	return h(ctx, body)
+	err := h(ctx, body)
+
+	result := resultOK
+	if err != nil {
+		result = resultError
+	}
+	messagesTotal.WithLabelValues(eventType, result).Inc()
+	messageDuration.WithLabelValues(eventType).Observe(time.Since(start).Seconds())
+
+	return err
 }
