@@ -70,3 +70,37 @@ loki.write "default" {
     url = "http://loki:3100/loki/api/v1/push"
   }
 }
+
+// ---------------- Трейсы ----------------
+// Go-сервисы (OpenTelemetry SDK) шлют трейсы по OTLP сюда: localhost:4317 (gRPC).
+// Alloy — единая точка приёма телеметрии: логи и трейсы идут через него,
+// поэтому поменять хранилище (Tempo → Jaeger) можно здесь, не трогая код.
+
+otelcol.receiver.otlp "default" {
+  grpc {
+    endpoint = "0.0.0.0:4317"
+  }
+  http {
+    endpoint = "0.0.0.0:4318"
+  }
+
+  output {
+    traces = [otelcol.processor.batch.default.input]
+  }
+}
+
+// Пачками эффективнее, чем по одному спану.
+otelcol.processor.batch "default" {
+  output {
+    traces = [otelcol.exporter.otlp.tempo.input]
+  }
+}
+
+otelcol.exporter.otlp "tempo" {
+  client {
+    endpoint = "tempo:4317"
+    tls {
+      insecure = true
+    }
+  }
+}

@@ -18,6 +18,10 @@ func NewWorkerNotify(ctx context.Context) (*notify.Worker, error) {
 
 	log := platform.NewLogger(cfg, "worker_notify")
 
+	if err := platform.InitTracing(ctx, cfg, "worker_notify", log); err != nil {
+		return nil, fmt.Errorf("init tracing: %w", err)
+	}
+
 	log.Info("rabbit consumer connect...")
 	consumer, err := platform.NewRabbitConsumer(
 		cfg,

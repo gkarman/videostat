@@ -7,6 +7,7 @@ import (
 
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
+	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
 )
 
 // Внешние API (генерация видео, LLM) отвечают от долей секунды до минуты.
@@ -39,9 +40,16 @@ type instrumentedTransport struct {
 }
 
 // InstrumentedTransport возвращает транспорт для http.Client, который пишет метрики
-// с меткой provider. Использование: &http.Client{Transport: metrics.InstrumentedTransport("heygen")}.
+// с меткой provider и создаёт спан на каждый запрос (дочерний к спану из ctx запроса).
+// Использование: &http.Client{Transport: metrics.InstrumentedTransport("heygen")}.
 func InstrumentedTransport(provider string) http.RoundTripper {
-	return &instrumentedTransport{provider: provider, next: http.DefaultTransport}
+	traced := otelhttp.NewTransport(http.DefaultTransport,
+		// Имя спана: "heygen POST" — сразу видно, какой провайдер и что делали.
+		otelhttp.WithSpanNameFormatter(func(_ string, r *http.Request) string {
+			return provider + " " + r.Method
+		}),
+	)
+	return &instrumentedTransport{provider: provider, next: traced}
 }
 
 func (t *instrumentedTransport) RoundTrip(req *http.Request) (*http.Response, error) {

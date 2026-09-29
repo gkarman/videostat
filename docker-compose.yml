@@ -124,14 +124,28 @@ services:
       - loki_data:/loki
     command: -config.file=/etc/loki/loki.yml
 
+  tempo:
+    image: grafana/tempo:2.8.1
+    container_name: videostat-tempo
+    restart: always
+    ports:
+      - "3200:3200"   # API (Grafana ходит по внутренней сети, порт наружу — для отладки)
+    volumes:
+      - ./monitoring/tempo/tempo.yml:/etc/tempo/tempo.yml:ro
+      - tempo_data:/var/tempo
+    command: -config.file=/etc/tempo/tempo.yml
+
   alloy:
     image: grafana/alloy:v1.10.0
     container_name: videostat-alloy
     restart: always
     depends_on:
       - loki
+      - tempo
     ports:
       - "12345:12345"   # UI: схема конвейера и состояние компонентов
+      - "4317:4317"     # OTLP gRPC: сюда Go-сервисы шлют трейсы
+      - "4318:4318"     # OTLP HTTP
     volumes:
       - ./monitoring/alloy/config.alloy:/etc/alloy/config.alloy:ro
       - ./logs:/var/log/videostat:ro   # файлы логов наших Go-сервисов
@@ -149,6 +163,7 @@ services:
     depends_on:
       - prometheus
       - loki
+      - tempo
     ports:
       - "3000:3000"
     environment:
@@ -167,3 +182,4 @@ volumes:
   grafana_data:
   loki_data:
   alloy_data:
+  tempo_data:

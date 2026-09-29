@@ -18,6 +18,8 @@ import (
 
 func NewRouter(log *slog.Logger, db *pgxpool.Pool, d *dispatcher.Dispatcher, apify *sharedapify.Client) *chi.Mux {
 	r := chi.NewRouter()
+	r.Use(middleware2.Tracing())
+	r.Use(middleware2.NameSpanByRoute())
 	r.Use(middleware2.Metrics())
 	r.Use(middleware2.Logger(log))
 	r.Use(middleware2.Recovery())

@@ -17,6 +17,10 @@ func NewWorkerCore(ctx context.Context) (*core.Worker, error) {
 
 	log := platform.NewLogger(cfg, "worker_core")
 
+	if err := platform.InitTracing(ctx, cfg, "worker_core", log); err != nil {
+		return nil, fmt.Errorf("init tracing: %w", err)
+	}
+
 	log.Info("db connect...")
 	db, err := platform.NewPostgres(ctx, cfg)
 	if err != nil {

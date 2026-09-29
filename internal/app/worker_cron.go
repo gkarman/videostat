@@ -19,6 +19,10 @@ func NewWorkerCron(ctx context.Context) (*cronworker.Worker, error) {
 
 	log := platform.NewLogger(cfg, "worker_cron")
 
+	if err := platform.InitTracing(ctx, cfg, "worker_cron", log); err != nil {
+		return nil, fmt.Errorf("init tracing: %w", err)
+	}
+
 	log.Info("db connect...")
 	db, err := platform.NewPostgres(ctx, cfg)
 	if err != nil {

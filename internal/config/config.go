@@ -22,6 +22,7 @@ type Config struct {
 	Kling       KlingConfig
 	Shotstack   ShotstackConfig
 	Metrics     MetricsConfig
+	Tracing     TracingConfig
 }
 
 type DBConfig struct {
@@ -60,6 +61,14 @@ type MetricsConfig struct {
 	WorkerCoreAddr   string `env:"METRICS_WORKER_CORE_ADDR" env-default:"localhost:9101"`
 	WorkerNotifyAddr string `env:"METRICS_WORKER_NOTIFY_ADDR" env-default:"localhost:9102"`
 	WorkerCronAddr   string `env:"METRICS_WORKER_CRON_ADDR" env-default:"localhost:9103"`
+}
+
+// TracingConfig — отправка трейсов (OpenTelemetry, протокол OTLP) в Alloy → Tempo.
+type TracingConfig struct {
+	// Endpoint — адрес приёмника OTLP/gRPC (host:port). Пусто — трейсинг выключен.
+	Endpoint string `env:"TRACING_OTLP_ENDPOINT"`
+	// SampleRatio — доля сохраняемых трейсов: 1 — все, 0.1 — каждый десятый.
+	SampleRatio float64 `env:"TRACING_SAMPLE_RATIO" env-default:"1"`
 }
 
 type ServerGRPCConfig struct {

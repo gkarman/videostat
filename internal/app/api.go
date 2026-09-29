@@ -36,6 +36,10 @@ func NewApi(ctx context.Context) (*Api, error) {
 
 	log := platform.NewLogger(cfg, "api")
 
+	if err := platform.InitTracing(ctx, cfg, "api", log); err != nil {
+		return nil, fmt.Errorf("init tracing: %w", err)
+	}
+
 	log.Info("db connect...")
 	postgresDB, err := platform.NewPostgres(ctx, cfg)
 	if err != nil {

@@ -7,7 +7,13 @@ import (
 	"time"
 
 	"github.com/gkarman/demo/internal/infrastructure/logger"
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/codes"
+	"go.opentelemetry.io/otel/trace"
 )
+
+var tracer = otel.Tracer("github.com/gkarman/demo/internal/worker")
 
 type Handler func(context.Context, []byte) error
 
@@ -36,12 +42,30 @@ func (r *Router) Handle(eventType string, body []byte) error {
 	}
 
 	start := time.Now()
-	ctx := r.eventContext(eventType, body)
+	ids := parseEventIDs(body)
+	ctx := r.eventContext(eventType, ids)
+
+	// Спан на обработку сообщения. Пока каждое сообщение — новый трейс;
+	// чтобы продолжать трейс отправителя, нужен traceparent в заголовках AMQP (шаг T2).
+	ctx, span := tracer.Start(ctx, "handle "+eventType,
+		trace.WithSpanKind(trace.SpanKindConsumer),
+		trace.WithAttributes(
+			attribute.String("messaging.system", "rabbitmq"),
+			attribute.String("event_id", ids.EventID),
+			// Те же имена, что в логах: в Tempo ищется { span.video_id = "..." }
+			attribute.String(logger.KeyVideoID, ids.VideoID),
+			attribute.String(logger.KeyBloggerID, ids.BloggerID),
+		),
+	)
+	defer span.End()
+
 	err := h(ctx, body)
 
 	result := resultOK
 	if err != nil {
 		result = resultError
+		span.RecordError(err)
+		span.SetStatus(codes.Error, err.Error())
 	}
 	messagesTotal.WithLabelValues(eventType, result).Inc()
 	messageDuration.WithLabelValues(eventType).Observe(time.Since(start).Seconds())
@@ -49,19 +73,25 @@ func (r *Router) Handle(eventType string, body []byte) error {
 	return err
 }
 
-// eventContext кладёт в логгер поля события (тип, id, video_id / blogger_id).
-// Все логи обработчика и вызванных им команд получат их автоматически — по video_id
-// в Loki находится весь путь видео через api, worker_core, worker_cron и worker_notify.
-func (r *Router) eventContext(eventType string, body []byte) context.Context {
-	var ids struct {
-		EventID   string `json:"event_id"`
-		VideoID   string `json:"video_id"`
-		BloggerID string `json:"blogger_id"`
-	}
+// eventIDs — идентификаторы, которые есть в теле событий (см. contracts/events).
+type eventIDs struct {
+	EventID   string `json:"event_id"`
+	VideoID   string `json:"video_id"`
+	BloggerID string `json:"blogger_id"`
+}
+
+func parseEventIDs(body []byte) eventIDs {
+	var ids eventIDs
 	// Ошибку разбора не обрабатываем: без этих полей обработчик всё равно отработает,
 	// а невалидное тело он сам отклонит при своём разборе.
 	_ = json.Unmarshal(body, &ids)
+	return ids
+}
 
+// eventContext кладёт в логгер поля события (тип, id, video_id / blogger_id).
+// Все логи обработчика и вызванных им команд получат их автоматически — по video_id
+// в Loki находится весь путь видео через api, worker_core, worker_cron и worker_notify.
+func (r *Router) eventContext(eventType string, ids eventIDs) context.Context {
 	ctx := logger.WithLogger(context.Background(), r.log)
 	ctx = logger.WithField(ctx, logger.KeyEventType, eventType)
 	ctx = logger.WithField(ctx, logger.KeyEventID, ids.EventID)

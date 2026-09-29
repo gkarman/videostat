@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/exaring/otelpgx"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
@@ -31,6 +32,9 @@ func NewPool(ctx context.Context, cfg Config) (*pgxpool.Pool, error) {
 	poolCfg.MaxConnLifetime = cfg.MaxConnLifetime
 	poolCfg.MaxConnIdleTime = cfg.MaxConnIdleTime
 	poolCfg.HealthCheckPeriod = time.Minute
+	// Спан на каждый SQL-запрос (текст запроса — в атрибуте db.query.text).
+	// Родителем станет спан из ctx, с которым вызван запрос.
+	poolCfg.ConnConfig.Tracer = otelpgx.NewTracer()
 
 	pool, err := pgxpool.NewWithConfig(ctx, poolCfg)
 	if err != nil {

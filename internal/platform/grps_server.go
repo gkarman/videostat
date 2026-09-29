@@ -10,6 +10,7 @@ import (
 	grpc2 "github.com/gkarman/demo/internal/infrastructure/transport/grpc"
 	"github.com/gkarman/demo/internal/infrastructure/transport/grpc/interceptor"
 	"github.com/jackc/pgx/v5/pgxpool"
+	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
 	"google.golang.org/grpc"
 )
 
@@ -21,6 +22,8 @@ func NewGRPCServer(ctx context.Context, log *slog.Logger, db *pgxpool.Pool, cfg 
 		ctx,
 		log,
 		grpcConf,
+		// Спан на каждый gRPC-вызов, с продолжением трейса из метаданных запроса.
+		grpc.StatsHandler(otelgrpc.NewServerHandler()),
 		grpc.ChainUnaryInterceptor(
 			interceptor.Recovery(),
 			interceptor.Logger(log),
