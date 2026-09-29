@@ -34,7 +34,7 @@ func NewApi(ctx context.Context) (*Api, error) {
 		return nil, fmt.Errorf("load config: %w", err)
 	}
 
-	log := platform.NewLogger(cfg)
+	log := platform.NewLogger(cfg, "api")
 
 	log.Info("db connect...")
 	postgresDB, err := platform.NewPostgres(ctx, cfg)

@@ -112,12 +112,42 @@ services:
       DATA_SOURCE_USER: ${DB_USER}
       DATA_SOURCE_PASS: ${DB_PASS}
 
+  loki:
+    image: grafana/loki:3.5.0
+    container_name: videostat-loki
+    restart: always
+    ports:
+      - "3100:3100"   # API (Grafana ходит по внутренней сети, порт наружу — для отладки)
+    volumes:
+      - ./monitoring/loki/loki.yml:/etc/loki/loki.yml:ro
+      - loki_data:/loki
+    command: -config.file=/etc/loki/loki.yml
+
+  alloy:
+    image: grafana/alloy:v1.10.0
+    container_name: videostat-alloy
+    restart: always
+    depends_on:
+      - loki
+    ports:
+      - "12345:12345"   # UI: схема конвейера и состояние компонентов
+    volumes:
+      - ./monitoring/alloy/config.alloy:/etc/alloy/config.alloy:ro
+      - ./logs:/var/log/videostat:ro   # файлы логов наших Go-сервисов
+      - alloy_data:/var/lib/alloy/data # позиции чтения файлов
+    command:
+      - run
+      - --server.http.listen-addr=0.0.0.0:12345
+      - --storage.path=/var/lib/alloy/data
+      - /etc/alloy/config.alloy
+
   grafana:
     image: grafana/grafana:12.1.0
     container_name: videostat-grafana
     restart: always
     depends_on:
       - prometheus
+      - loki
     ports:
       - "3000:3000"
     environment:
@@ -134,3 +164,5 @@ volumes:
   minio_data:
   prometheus_data:
   grafana_data:
+  loki_data:
+  alloy_data:

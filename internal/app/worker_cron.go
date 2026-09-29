@@ -17,7 +17,7 @@ func NewWorkerCron(ctx context.Context) (*cronworker.Worker, error) {
 		return nil, err
 	}
 
-	log := platform.NewLogger(cfg)
+	log := platform.NewLogger(cfg, "worker_cron")
 
 	log.Info("db connect...")
 	db, err := platform.NewPostgres(ctx, cfg)

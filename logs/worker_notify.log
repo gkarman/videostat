@@ -1,0 +1,12 @@
+{"time":"2026-09-29T14:51:19.346104+03:00","level":"INFO","msg":"rabbit consumer connect..."}
+{"time":"2026-09-29T14:51:19.34645+03:00","level":"INFO","msg":"rabbit consumer connected"}
+{"time":"2026-09-29T14:51:20.159459+03:00","level":"INFO","msg":"worker_notify started"}
+{"time":"2026-09-29T14:51:20.159458+03:00","level":"INFO","msg":"http server started","component":"metrics","addr":"localhost:9102"}
+{"time":"2026-09-29T14:51:20.159549+03:00","level":"INFO","msg":"rabbit consume loop start"}
+{"time":"2026-09-29T14:51:20.15956+03:00","level":"INFO","msg":"dial rabbit"}
+{"time":"2026-09-29T14:51:20.167035+03:00","level":"INFO","msg":"rabbit connected"}
+{"time":"2026-09-29T14:51:20.167885+03:00","level":"INFO","msg":"declare queue","queue":"worker.notify"}
+{"time":"2026-09-29T14:51:20.168446+03:00","level":"INFO","msg":"bind queue","key":"car.#"}
+{"time":"2026-09-29T14:51:20.173166+03:00","level":"INFO","msg":"bind queue","key":"user.#"}
+{"time":"2026-09-29T14:51:20.176099+03:00","level":"INFO","msg":"bind queue","key":"blogger.#"}
+{"time":"2026-09-29T14:51:20.17863+03:00","level":"INFO","msg":"consumer started"}

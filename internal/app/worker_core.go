@@ -15,7 +15,7 @@ func NewWorkerCore(ctx context.Context) (*core.Worker, error) {
 		return nil, err
 	}
 
-	log := platform.NewLogger(cfg)
+	log := platform.NewLogger(cfg, "worker_core")
 
 	log.Info("db connect...")
 	db, err := platform.NewPostgres(ctx, cfg)

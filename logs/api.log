@@ -1,0 +1,7 @@
+{"time":"2026-09-29T14:51:18.921592+03:00","level":"INFO","msg":"db connect..."}
+{"time":"2026-09-29T14:51:18.95457+03:00","level":"INFO","msg":"db connected"}
+{"time":"2026-09-29T14:51:18.954615+03:00","level":"INFO","msg":"rabbitPusher connect..."}
+{"time":"2026-09-29T14:51:18.962086+03:00","level":"INFO","msg":"rabbitPusher connected"}
+{"time":"2026-09-29T14:51:20.119265+03:00","level":"INFO","msg":"http server started","addr":"localhost:8081"}
+{"time":"2026-09-29T14:51:20.119305+03:00","level":"INFO","msg":"start telegram bot"}
+{"time":"2026-09-29T14:51:20.119217+03:00","level":"INFO","msg":"gRPC server started","addr":{"IP":"127.0.0.1","Port":50051,"Zone":""}}

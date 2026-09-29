@@ -1,0 +1,72 @@
+// Grafana Alloy — агент: читает файлы логов, размечает их и отправляет в Loki.
+// Конвейер: найти файлы → добавить метки → читать строки → разобрать JSON → отправить.
+// Схема конвейера видна в UI: http://localhost:12345
+
+// 1. Найти файлы. Папка ./logs проекта смонтирована в контейнер как /var/log/videostat.
+local.file_match "videostat" {
+  path_targets = [{"__path__" = "/var/log/videostat/*.log"}]
+  sync_period  = "10s"
+}
+
+// 2. Метки из имени файла: logs/worker_core.log → service="worker_core".
+discovery.relabel "videostat" {
+  targets = local.file_match.videostat.targets
+
+  // Только активные файлы вида api.log. Старые после ротации (api-2026-...log) пропускаем,
+  // иначе они считались бы заново и получили бы метку service="api-2026-...".
+  rule {
+    source_labels = ["__path__"]
+    regex         = ".*/[a-z_]+\\.log"
+    action        = "keep"
+  }
+
+  rule {
+    source_labels = ["__path__"]
+    regex         = ".*/([a-z_]+)\\.log"
+    target_label  = "service"
+  }
+
+  rule {
+    target_label = "env"
+    replacement  = "local"
+  }
+}
+
+// 3. Читать новые строки (как tail -f). Позиция в каждом файле запоминается,
+//    поэтому после рестарта Alloy продолжит с того же места, без дублей.
+loki.source.file "videostat" {
+  targets    = discovery.relabel.videostat.output
+  forward_to = [loki.process.videostat.receiver]
+}
+
+// 4. Разобрать JSON-строку slog.
+loki.process "videostat" {
+  stage.json {
+    expressions = {
+      level = "level",
+      time  = "time",
+    }
+  }
+
+  // level — в метки: значений всего 4 (DEBUG/INFO/WARN/ERROR), кардинальность низкая.
+  // videoID, error и т.п. в метки НЕ выносим — они остаются внутри строки
+  // и фильтруются запросом: {service="api"} | json | videoID="..."
+  stage.labels {
+    values = { level = "" }
+  }
+
+  // Время события берём из самого лога, а не момент, когда Alloy прочитал строку.
+  stage.timestamp {
+    source = "time"
+    format = "RFC3339Nano"
+  }
+
+  forward_to = [loki.write.default.receiver]
+}
+
+// 5. Отправить в Loki (по имени сервиса в docker-сети).
+loki.write "default" {
+  endpoint {
+    url = "http://loki:3100/loki/api/v1/push"
+  }
+}

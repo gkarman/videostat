@@ -16,7 +16,7 @@ func NewWorkerNotify(ctx context.Context) (*notify.Worker, error) {
 		return nil, err
 	}
 
-	log := platform.NewLogger(cfg)
+	log := platform.NewLogger(cfg, "worker_notify")
 
 	log.Info("rabbit consumer connect...")
 	consumer, err := platform.NewRabbitConsumer(

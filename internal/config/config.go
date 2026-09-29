@@ -44,6 +44,8 @@ func (c DBConfig) DSN() string {
 
 type LoggerConfig struct {
 	Level string `env:"LOG_LEVEL"`
+	// Dir — если задан, логи дублируются в файлы <Dir>/<сервис>.log (для сбора в Loki).
+	Dir string `env:"LOG_DIR"`
 }
 
 type ServerHttpConfig struct {
