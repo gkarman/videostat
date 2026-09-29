@@ -21,12 +21,12 @@ func VideoGenerationDoneToRabbitHandler(publisher application.Publisher, log *sl
 
 		body, err := json.Marshal(mappers.MapVideoGenerationDone(event))
 		if err != nil {
-			log.Error("marshal VideoGenerationDone failed", "err", err)
+			log.Error("marshal VideoGenerationDone failed", "error", err)
 			return
 		}
 
 		if err = publisher.Publish(ctx, events.EventVideoGenerationDoneV1, body); err != nil {
-			log.Error("publish VideoGenerationDone failed", "err", err)
+			log.Error("publish VideoGenerationDone failed", "error", err)
 		}
 	}
 }
@@ -41,12 +41,12 @@ func VideoCompositionDoneToRabbitHandler(publisher application.Publisher, log *s
 
 		body, err := json.Marshal(mappers.MapVideoCompositionDone(event))
 		if err != nil {
-			log.Error("marshal VideoCompositionDone failed", "err", err)
+			log.Error("marshal VideoCompositionDone failed", "error", err)
 			return
 		}
 
 		if err = publisher.Publish(ctx, events.EventVideoCompositionDoneV1, body); err != nil {
-			log.Error("publish VideoCompositionDone failed", "err", err)
+			log.Error("publish VideoCompositionDone failed", "error", err)
 		}
 	}
 }
@@ -61,12 +61,12 @@ func VideoGenerationErrorToRabbitHandler(publisher application.Publisher, log *s
 
 		body, err := json.Marshal(mappers.MapVideoGenerationError(event))
 		if err != nil {
-			log.Error("marshal VideoGenerationError failed", "err", err)
+			log.Error("marshal VideoGenerationError failed", "error", err)
 			return
 		}
 
 		if err = publisher.Publish(ctx, events.EventVideoGenerationErrorV1, body); err != nil {
-			log.Error("publish VideoGenerationError failed", "err", err)
+			log.Error("publish VideoGenerationError failed", "error", err)
 		}
 	}
 }

@@ -6,7 +6,7 @@
   ],
   "timezone": "browser",
   "schemaVersion": 41,
-  "version": 1,
+  "version": 2,
   "editable": true,
   "refresh": "30s",
   "time": {
@@ -206,6 +206,16 @@
                   "color": "green"
                 }
               }
+            }
+          ],
+          "links": [
+            {
+              "title": "Логи ${__field.labels.job}",
+              "url": "/explore?schemaVersion=1&orgId=1&panes=%7B%22a%22%3A%7B%22datasource%22%3A%22loki%22%2C%22queries%22%3A%5B%7B%22refId%22%3A%22A%22%2C%22datasource%22%3A%7B%22type%22%3A%22loki%22%2C%22uid%22%3A%22loki%22%7D%2C%22expr%22%3A%22%7Bservice%3D%5C%22${__field.labels.job}%5C%22%7D%22%7D%5D%2C%22range%22%3A%7B%22from%22%3A%22${__from}%22%2C%22to%22%3A%22${__to}%22%7D%7D%7D"
+            },
+            {
+              "title": "Ошибки ${__field.labels.job}",
+              "url": "/explore?schemaVersion=1&orgId=1&panes=%7B%22a%22%3A%7B%22datasource%22%3A%22loki%22%2C%22queries%22%3A%5B%7B%22refId%22%3A%22A%22%2C%22datasource%22%3A%7B%22type%22%3A%22loki%22%2C%22uid%22%3A%22loki%22%7D%2C%22expr%22%3A%22%7Bservice%3D%5C%22${__field.labels.job}%5C%22%2C%20level%3D%5C%22ERROR%5C%22%7D%22%7D%5D%2C%22range%22%3A%7B%22from%22%3A%22${__from}%22%2C%22to%22%3A%22${__to}%22%7D%7D%7D"
             }
           ]
         },
@@ -634,7 +644,7 @@
       "id": 15,
       "type": "timeseries",
       "title": "Ошибки обработки",
-      "description": "Подробности — в логах воркера по event_type",
+      "description": "Клик по линии → «Логи ошибок» откроет ERROR-логи этого воркера за тот же период",
       "datasource": {
         "type": "prometheus",
         "uid": "prometheus"
@@ -652,8 +662,8 @@
             "type": "prometheus",
             "uid": "prometheus"
           },
-          "expr": "sum by (event_type) (rate(worker_messages_total{result=\"error\"}[$__rate_interval]))",
-          "legendFormat": "{{event_type}}"
+          "expr": "sum by (job, event_type) (rate(worker_messages_total{result=\"error\"}[$__rate_interval]))",
+          "legendFormat": "{{job}} {{event_type}}"
         }
       ],
       "fieldConfig": {
@@ -666,7 +676,13 @@
             "stacking": {
               "mode": "none"
             }
-          }
+          },
+          "links": [
+            {
+              "title": "Логи ошибок ${__field.labels.job}",
+              "url": "/explore?schemaVersion=1&orgId=1&panes=%7B%22a%22%3A%7B%22datasource%22%3A%22loki%22%2C%22queries%22%3A%5B%7B%22refId%22%3A%22A%22%2C%22datasource%22%3A%7B%22type%22%3A%22loki%22%2C%22uid%22%3A%22loki%22%7D%2C%22expr%22%3A%22%7Bservice%3D%5C%22${__field.labels.job}%5C%22%2C%20level%3D%5C%22ERROR%5C%22%7D%22%7D%5D%2C%22range%22%3A%7B%22from%22%3A%22${__from}%22%2C%22to%22%3A%22${__to}%22%7D%7D%7D"
+            }
+          ]
         },
         "overrides": []
       },
@@ -1389,6 +1405,109 @@
           "mode": "multi",
           "sort": "desc"
         }
+      }
+    },
+    {
+      "id": 31,
+      "type": "row",
+      "title": "Логи",
+      "collapsed": false,
+      "gridPos": {
+        "x": 0,
+        "y": 54,
+        "w": 24,
+        "h": 1
+      },
+      "panels": []
+    },
+    {
+      "id": 32,
+      "type": "timeseries",
+      "title": "Ошибки и предупреждения в логах",
+      "datasource": {
+        "type": "loki",
+        "uid": "loki"
+      },
+      "description": "Метрика, посчитанная из логов (LogQL count_over_time). Выделите мышью всплеск — лента справа покажет эти строки",
+      "gridPos": {
+        "x": 0,
+        "y": 55,
+        "w": 10,
+        "h": 10
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "loki",
+            "uid": "loki"
+          },
+          "expr": "sum by (service, level) (count_over_time({env=\"local\", level=~\"ERROR|WARN\"} [$__auto]))",
+          "legendFormat": "{{service}} {{level}}",
+          "queryType": "range"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "custom": {
+            "drawStyle": "bars",
+            "fillOpacity": 80,
+            "lineWidth": 1,
+            "stacking": {
+              "mode": "normal"
+            }
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      }
+    },
+    {
+      "id": 33,
+      "type": "logs",
+      "title": "Последние ошибки и предупреждения",
+      "datasource": {
+        "type": "loki",
+        "uid": "loki"
+      },
+      "description": "Все сервисы в одной ленте. Клик по строке раскрывает поля JSON",
+      "gridPos": {
+        "x": 10,
+        "y": 55,
+        "w": 14,
+        "h": 10
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "loki",
+            "uid": "loki"
+          },
+          "expr": "{env=\"local\", level=~\"ERROR|WARN\"}",
+          "queryType": "range",
+          "maxLines": 200
+        }
+      ],
+      "options": {
+        "showTime": true,
+        "showLabels": false,
+        "showCommonLabels": false,
+        "wrapLogMessage": true,
+        "prettifyLogMessage": false,
+        "enableLogDetails": true,
+        "dedupStrategy": "none",
+        "sortOrder": "Descending"
       }
     }
   ],

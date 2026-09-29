@@ -32,7 +32,7 @@ func (r *Router) handleFSM(ctx context.Context, msg *tgbotapi.Message) bool {
 		videoURL := msg.Text
 		video, err := r.startProcessVideo.GetVideoByURL(ctx, videoURL)
 		if err != nil {
-			r.log.Error("get video by url", "err", err, "url", videoURL)
+			r.log.Error("get video by url", "error", err, "url", videoURL)
 			r.send(msg.Chat.ID, fmt.Sprintf("Ошибка: %v", err))
 			return true
 		}
@@ -55,7 +55,7 @@ func (r *Router) handleFSM(ctx context.Context, msg *tgbotapi.Message) bool {
 			ChatID: msg.Chat.ID,
 		})
 		if err != nil {
-			r.log.Error("telegram request failed", "err", err, "url", videoURL)
+			r.log.Error("telegram request failed", "error", err, "url", videoURL)
 			r.send(msg.Chat.ID, fmt.Sprintf("Ошибка: %v", err))
 			return true
 		}
@@ -112,7 +112,7 @@ func (r *Router) handleCallback(ctx context.Context, q *tgbotapi.CallbackQuery) 
 			return
 		}
 		if err := r.resetVideoProcess.Run(ctx, st.PendingVideoID); err != nil {
-			r.log.Error("reset video process", "err", err)
+			r.log.Error("reset video process", "error", err)
 			r.send(q.Message.Chat.ID, fmt.Sprintf("Ошибка сброса: %v", err))
 			return
 		}
@@ -121,7 +121,7 @@ func (r *Router) handleCallback(ctx context.Context, q *tgbotapi.CallbackQuery) 
 			ChatID: q.Message.Chat.ID,
 		})
 		if err != nil {
-			r.log.Error("start process video after reset", "err", err)
+			r.log.Error("start process video after reset", "error", err)
 			r.send(q.Message.Chat.ID, fmt.Sprintf("Ошибка: %v", err))
 			return
 		}

@@ -25,10 +25,8 @@ func NewFetchVideoSources(repo blogger.Repo, searcher application.FileSourceSear
 }
 
 func (c *FetchVideoSources) Execute(ctx context.Context, req reqdto.FetchVideoSources) error {
-	log := logger.FromContext(ctx).With(
-		"component", "FetchVideoSources",
-		"videoID", req.VideoID,
-	)
+	ctx = logger.WithField(ctx, logger.KeyVideoID, req.VideoID)
+	log := logger.FromContext(ctx).With("component", "FetchVideoSources")
 	log.Debug("StartFetching")
 
 	v, err := c.repo.GetVideoByUrl(ctx, req.VideoURL)
@@ -38,7 +36,7 @@ func (c *FetchVideoSources) Execute(ctx context.Context, req reqdto.FetchVideoSo
 
 	fileUrl, err := c.searcher.SearchUrl(ctx, v)
 	if err != nil {
-		log.Debug("ошибка получения fileUrl из стороннего сервиса", "err",  err)
+		log.Debug("ошибка получения fileUrl из стороннего сервиса", "error",  err)
 		err = v.MarkFailProcessing(blogger.ErrorStageFileFetch, err)
 		if err != nil {
 			return fmt.Errorf("mark fail processing: %w", err)

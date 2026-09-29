@@ -42,7 +42,7 @@ func (c *PollVideoGenerations) Execute(ctx context.Context) error {
 		}
 
 		if err := c.poll(ctx, vg); err != nil {
-			log.Error("poll failed", "externalID", vg.ExternalID, "error", err)
+			log.Error("poll failed", "external_id", vg.ExternalID, "error", err)
 		}
 	}
 
@@ -50,7 +50,7 @@ func (c *PollVideoGenerations) Execute(ctx context.Context) error {
 }
 
 func (c *PollVideoGenerations) poll(ctx context.Context, vg *blogger.VideoGeneration) error {
-	log := logger.FromContext(ctx).With("externalID", vg.ExternalID)
+	log := logger.FromContext(ctx).With("external_id", vg.ExternalID)
 
 	status, err := c.g.GetStatus(ctx, vg.ExternalID)
 	if err != nil {
@@ -73,17 +73,17 @@ func (c *PollVideoGenerations) poll(ctx context.Context, vg *blogger.VideoGenera
 		vg.UpdatedAt = time.Now()
 		if err = v.MarkReady(); err != nil {
 			// video already in ready/terminal state — generation row was never updated, fix it now
-			log.Warn("mark ready skipped, video already in terminal state", "videoStatus", v.Status, "error", err)
+			log.Warn("mark ready skipped, video already in terminal state", "video_status", v.Status, "error", err)
 		} else {
 			c.dispatchToWatchers(ctx, vg.VideoID, func(chatID int64) any {
 				return &blogger.VideoGenerationDone{VideoID: vg.VideoID, S3URL: s3URL, ChatID: chatID, At: time.Now()}
 			})
 		}
-		log.Info("generation completed", "s3URL", s3URL)
+		log.Info("generation completed", "s3_url", s3URL)
 		if c.compose != nil {
 			active, err := c.r.CountActiveBrollSegments(ctx, vg.VideoID)
 			if err == nil && active == 0 {
-				log.Info("broll already done, triggering composition", "videoID", vg.VideoID)
+				log.Info("broll already done, triggering composition", "video_id", vg.VideoID)
 				if err := c.compose.Run(ctx, reqdto.ComposeFinalVideo{VideoID: vg.VideoID}); err != nil {
 					log.Error("compose after heygen done", "error", err)
 				}

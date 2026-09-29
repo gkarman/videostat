@@ -27,7 +27,7 @@ func (h *VideoGenerationDoneHandler) Handle(ctx context.Context, body []byte) er
 
 	text := fmt.Sprintf("✅ Видео готово\nID: %s\nS3: %s", evt.VideoID, evt.S3URL)
 	if err := h.notifier.Notify(evt.ChatID, text); err != nil {
-		h.log.Error("telegram notify failed", "err", err)
+		h.log.Error("telegram notify failed", "error", err)
 	}
 
 	return nil

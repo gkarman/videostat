@@ -22,7 +22,8 @@ func NewSubmitBrollGenerations(repo blogger.Repo, gen application.BrollVideoGene
 }
 
 func (c *SubmitBrollGenerations) Run(ctx context.Context, req reqdto.SubmitBrollGenerations) error {
-	log := logger.FromContext(ctx).With("component", "SubmitBrollGenerations", "videoID", req.VideoID)
+	ctx = logger.WithField(ctx, logger.KeyVideoID, req.VideoID)
+	log := logger.FromContext(ctx).With("component", "SubmitBrollGenerations")
 
 	segments, err := c.repo.ListPendingBrollSegments(ctx, req.VideoID)
 	if err != nil {
@@ -42,21 +43,21 @@ func (c *SubmitBrollGenerations) Run(ctx context.Context, req reqdto.SubmitBroll
 			errStr := err.Error()
 			if strings.Contains(errStr, "1303") {
 				log.Warn("kling rate limit hit, stopping submit — will retry on next cron tick",
-					"segmentID", s.ID, "position", s.Position, "error", err)
+					"segment_id", s.ID, "position", s.Position, "error", err)
 				break
 			}
 			if strings.Contains(errStr, "1102") {
 				log.Error("kling account balance not enough — top up the account, stopping submit",
-					"segmentID", s.ID, "position", s.Position, "error", err)
+					"segment_id", s.ID, "position", s.Position, "error", err)
 				break
 			}
 			log.Error("kling submit failed, marking segment as failed",
-				"segmentID", s.ID, "position", s.Position, "error", err)
+				"segment_id", s.ID, "position", s.Position, "error", err)
 			s.GenerationStatus = blogger.BrollStatusFailed
 			errMsg := errStr
 			s.GenerationError = &errMsg
 		} else {
-			log.Info("kling segment submitted", "segmentID", s.ID, "position", s.Position, "externalID", externalID)
+			log.Info("kling segment submitted", "segment_id", s.ID, "position", s.Position, "external_id", externalID)
 			s.GenerationStatus = blogger.BrollStatusProcessing
 			s.GenerationExternalID = &externalID
 		}

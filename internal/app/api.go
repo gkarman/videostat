@@ -86,7 +86,7 @@ func (a *Api) Run(ctx context.Context) error {
 	defer func() {
 		a.db.Close()
 		if err := a.rabbitPusher.Close(); err != nil {
-			a.log.Error("rabbit close", "err", err)
+			a.log.Error("rabbit close", "error", err)
 		}
 	}()
 	a.serverHttp.Start()

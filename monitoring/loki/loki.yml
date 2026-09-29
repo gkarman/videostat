@@ -11,7 +11,7 @@ common:
   storage:
     filesystem:
       chunks_directory: /loki/chunks
-      rules_directory: /loki/rules
+      rules_directory: /etc/loki/rules   # правила алертов (см. ruler ниже)
   replication_factor: 1
   ring:
     kvstore:
@@ -36,3 +36,11 @@ compactor:
   working_directory: /loki/compactor
   retention_enabled: true
   delete_request_store: filesystem
+
+# ruler — проверяет правила алертов на LogQL, как Prometheus на PromQL.
+# Правила: monitoring/loki/rules/*.yml (подпапка fake — это tenant по умолчанию при auth_enabled: false).
+# Отправки уведомлений пока нет (alertmanager_url не задан) — алерты видны в Grafana → Alerting.
+ruler:
+  rule_path: /loki/rules-temp
+  evaluation_interval: 1m
+  enable_api: true

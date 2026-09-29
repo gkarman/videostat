@@ -27,7 +27,7 @@ func (h *VideoGenerationErrorHandler) Handle(ctx context.Context, body []byte) e
 
 	text := fmt.Sprintf("❌ Ошибка генерации\nID: %s\nПричина: %s", evt.VideoID, evt.Reason)
 	if err := h.notifier.Notify(evt.ChatID, text); err != nil {
-		h.log.Error("telegram notify failed", "err", err)
+		h.log.Error("telegram notify failed", "error", err)
 	}
 
 	return nil

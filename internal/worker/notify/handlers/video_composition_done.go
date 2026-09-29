@@ -27,7 +27,7 @@ func (h *VideoCompositionDoneHandler) Handle(ctx context.Context, body []byte) e
 
 	text := fmt.Sprintf("🎬 Итоговое видео готово\nИсходник: %s\nСмотреть: %s", evt.SourceURL, evt.ResultURL)
 	if err := h.notifier.Notify(evt.ChatID, text); err != nil {
-		h.log.Error("telegram notify failed", "err", err)
+		h.log.Error("telegram notify failed", "error", err)
 	}
 
 	return nil

@@ -101,7 +101,7 @@ func (b *Bot) setCommands() {
 	cfg := tgbotapi.NewSetMyCommands(cmds...)
 	_, err := b.api.Request(cfg)
 	if err != nil {
-		b.log.Error("set telegram commands", slog.Any("err", err))
+		b.log.Error("set telegram commands", slog.Any("error", err))
 	}
 }
 

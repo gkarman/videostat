@@ -2,6 +2,7 @@ package worker
 
 import (
 	"context"
+	"encoding/json"
 	"log/slog"
 	"time"
 
@@ -35,7 +36,7 @@ func (r *Router) Handle(eventType string, body []byte) error {
 	}
 
 	start := time.Now()
-	ctx := logger.WithLogger(context.Background(), r.log)
+	ctx := r.eventContext(eventType, body)
 	err := h(ctx, body)
 
 	result := resultOK
@@ -46,4 +47,25 @@ func (r *Router) Handle(eventType string, body []byte) error {
 	messageDuration.WithLabelValues(eventType).Observe(time.Since(start).Seconds())
 
 	return err
+}
+
+// eventContext кладёт в логгер поля события (тип, id, video_id / blogger_id).
+// Все логи обработчика и вызванных им команд получат их автоматически — по video_id
+// в Loki находится весь путь видео через api, worker_core, worker_cron и worker_notify.
+func (r *Router) eventContext(eventType string, body []byte) context.Context {
+	var ids struct {
+		EventID   string `json:"event_id"`
+		VideoID   string `json:"video_id"`
+		BloggerID string `json:"blogger_id"`
+	}
+	// Ошибку разбора не обрабатываем: без этих полей обработчик всё равно отработает,
+	// а невалидное тело он сам отклонит при своём разборе.
+	_ = json.Unmarshal(body, &ids)
+
+	ctx := logger.WithLogger(context.Background(), r.log)
+	ctx = logger.WithField(ctx, logger.KeyEventType, eventType)
+	ctx = logger.WithField(ctx, logger.KeyEventID, ids.EventID)
+	ctx = logger.WithField(ctx, logger.KeyVideoID, ids.VideoID)
+	ctx = logger.WithField(ctx, logger.KeyBloggerID, ids.BloggerID)
+	return ctx
 }

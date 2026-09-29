@@ -22,13 +22,13 @@ func BloggerCreatedToRabbitHandler(publisher application.Publisher, log *slog.Lo
 		msg := mappers.MapBloggerCreated(event)
 		body, err := json.Marshal(msg)
 		if err != nil {
-			log.Error("marshal failed in BloggerCreatedToRabbitHandler", "err", err)
+			log.Error("marshal failed in BloggerCreatedToRabbitHandler", "error", err)
 			return
 		}
 
 		err = publisher.Publish(ctx, events.EventBloggerCreatedV1, body)
 		if err != nil {
-			log.Error("failed to publish to rabbitmq", "err", err)
+			log.Error("failed to publish to rabbitmq", "error", err)
 			return
 		}
 

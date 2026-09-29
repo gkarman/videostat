@@ -32,18 +32,18 @@ func (c *PollCompositions) Execute(ctx context.Context) error {
 
 	for _, comp := range compositions {
 		if comp.ExternalID == nil || *comp.ExternalID == "" {
-			log.Warn("composition has no external ID, skipping", "compositionID", comp.ID)
+			log.Warn("composition has no external ID, skipping", "composition_id", comp.ID)
 			continue
 		}
 
-		log.Info("checking composition", "compositionID", comp.ID, "externalID", *comp.ExternalID, "videoID", comp.VideoID)
+		log.Info("checking composition", "composition_id", comp.ID, "external_id", *comp.ExternalID, "video_id", comp.VideoID)
 
 		status, err := c.composer.GetStatus(ctx, *comp.ExternalID)
 		if err != nil {
-			log.Error("get composition status failed", "compositionID", comp.ID, "externalID", *comp.ExternalID, "videoID", comp.VideoID, "error", err)
+			log.Error("get composition status failed", "composition_id", comp.ID, "external_id", *comp.ExternalID, "video_id", comp.VideoID, "error", err)
 			continue
 		}
-		log.Info("composition status", "compositionID", comp.ID, "externalID", *comp.ExternalID, "status", status.Status)
+		log.Info("composition status", "composition_id", comp.ID, "external_id", *comp.ExternalID, "status", status.Status)
 
 		switch status.Status {
 		case "done":
@@ -70,7 +70,7 @@ func (c *PollCompositions) notifyDone(ctx context.Context, videoID, resultURL st
 
 	video, err := c.repo.GetVideoByID(ctx, videoID)
 	if err != nil {
-		log.Error("poll compositions: get video for notify", "videoID", videoID, "error", err)
+		log.Error("poll compositions: get video for notify", "video_id", videoID, "error", err)
 		return
 	}
 

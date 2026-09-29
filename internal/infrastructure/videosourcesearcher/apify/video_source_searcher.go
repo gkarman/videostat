@@ -25,7 +25,8 @@ type youtubeDownloadResult struct {
 }
 
 func (s *VideoSourceSearcher) SearchUrl(ctx context.Context, v *blogger.Video) (string, error) {
-	log := logger.FromContext(ctx).With("component", "VideoSourceSearcher", "videoID", v.ID)
+	ctx = logger.WithField(ctx, logger.KeyVideoID, v.ID)
+	log := logger.FromContext(ctx).With("component", "VideoSourceSearcher")
 
 	switch {
 	case isYouTube(v.URL):

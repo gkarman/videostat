@@ -22,12 +22,12 @@ func VideoPromptGeneratedToRabbitHandler(publisher application.Publisher, log *s
 		integrationEvent := mappers.MapVideoPromptGenerated(event)
 		body, err := json.Marshal(integrationEvent)
 		if err != nil {
-			log.Error("marshal failed in VideoPromptGeneratedToRabbitHandler", "err", err)
+			log.Error("marshal failed in VideoPromptGeneratedToRabbitHandler", "error", err)
 			return
 		}
 
 		if err = publisher.Publish(ctx, events.EventVideoPromptGeneratedV1, body); err != nil {
-			log.Error("failed to publish to rabbitmq", "err", err)
+			log.Error("failed to publish to rabbitmq", "error", err)
 			return
 		}
 

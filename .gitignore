@@ -1,3 +1,4 @@
 .idea/
 .env
-.claudelogs/
+.claude
+logs/

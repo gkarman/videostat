@@ -34,7 +34,7 @@ func (c *RefreshAllBloggers) Execute(ctx context.Context) error {
 			BloggerID: b.ID,
 		})
 		if err != nil {
-			log.Error("fetch failed", "bloggerID", b.ID, "err", err)
+			log.Error("fetch failed", "blogger_id", b.ID, "error", err)
 			continue
 		}
 	}

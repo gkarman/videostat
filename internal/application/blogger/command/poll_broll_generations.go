@@ -40,18 +40,18 @@ func (c *PollBrollGenerations) Execute(ctx context.Context) error {
 
 		status, err := c.gen.GetStatus(ctx, *s.GenerationExternalID)
 		if err != nil {
-			log.Error("get broll status, marking as failed", "segmentID", s.ID, "externalID", *s.GenerationExternalID, "error", err)
+			log.Error("get broll status, marking as failed", "segment_id", s.ID, "external_id", *s.GenerationExternalID, "error", err)
 			errMsg := err.Error()
 			s.GenerationStatus = blogger.BrollStatusFailed
 			s.GenerationError = &errMsg
 			if updateErr := c.repo.UpdateBrollSegment(ctx, s); updateErr != nil {
-				log.Error("failed to mark broll segment as failed", "segmentID", s.ID, "error", updateErr)
+				log.Error("failed to mark broll segment as failed", "segment_id", s.ID, "error", updateErr)
 			}
 			finishedVideoIDs[s.VideoID] = struct{}{}
 			continue
 		}
 
-		log.Info("broll segment status", "segmentID", s.ID, "externalID", *s.GenerationExternalID, "status", status.Status)
+		log.Info("broll segment status", "segment_id", s.ID, "external_id", *s.GenerationExternalID, "status", status.Status)
 
 		switch status.Status {
 		case "done":
@@ -76,10 +76,10 @@ func (c *PollBrollGenerations) Execute(ctx context.Context) error {
 		if err != nil || active > 0 {
 			continue
 		}
-		log.Info("all broll segments done, composing final video", "videoID", videoID)
+		log.Info("all broll segments done, composing final video", "video_id", videoID)
 		if err := c.compose.Run(ctx, reqdto.ComposeFinalVideo{VideoID: videoID}); err != nil {
 			if errors.Is(err, ErrAvatarNotReady) {
-				log.Info("avatar not ready yet, will retry when heygen finishes", "videoID", videoID)
+				log.Info("avatar not ready yet, will retry when heygen finishes", "video_id", videoID)
 				continue
 			}
 			return fmt.Errorf("compose final video %s: %w", videoID, err)

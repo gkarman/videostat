@@ -195,7 +195,7 @@ func (w *Worker) retryPendingBrollSubmissions() error {
 	submitCmd := command.NewSubmitBrollGenerations(repo, w.brollVideoGenerator)
 	for _, videoID := range videoIDs {
 		if err := submitCmd.Run(w.ctx, reqdto.SubmitBrollGenerations{VideoID: videoID}); err != nil {
-			w.log.Error("failed to submit broll generations", "videoID", videoID, "error", err)
+			w.log.Error("failed to submit broll generations", "video_id", videoID, "error", err)
 		}
 	}
 	return nil
@@ -216,9 +216,9 @@ func (w *Worker) triggerPendingCompositions() error {
 	composeCmd := command.NewComposeFinalVideo(repo, w.videoComposer)
 	for _, videoID := range videoIDs {
 		if err := composeCmd.Run(w.ctx, reqdto.ComposeFinalVideo{VideoID: videoID}); err != nil {
-			w.log.Error("failed to compose video", "videoID", videoID, "error", err)
+			w.log.Error("failed to compose video", "video_id", videoID, "error", err)
 		} else {
-			w.log.Info("composition triggered", "videoID", videoID)
+			w.log.Info("composition triggered", "video_id", videoID)
 		}
 	}
 	return nil

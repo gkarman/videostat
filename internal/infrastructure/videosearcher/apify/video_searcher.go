@@ -79,7 +79,7 @@ func (s *VideoSearcher) searchYouTube(ctx context.Context, b *blogger.Blogger) (
 	}
 
 	raw, err := s.client.RunActorSync(ctx, "streamers~youtube-shorts-scraper", input)
-	log.Debug("Получили ответ", raw)
+	log.Debug("Получили ответ", "response", string(raw))
 	if err != nil {
 		return nil, err
 	}
@@ -88,8 +88,8 @@ func (s *VideoSearcher) searchYouTube(ctx context.Context, b *blogger.Blogger) (
 	if err := json.Unmarshal(raw, &items); err != nil {
 		return nil, err
 	}
-	log.Debug("проверка", "кол-во элементов", len(items))
-	log.Debug("проверка", "элементы", items)
+	log.Debug("проверка", "items_count", len(items))
+	log.Debug("проверка", "items", items)
 
 	return s.youtubeToVideos(b, items, days), nil
 }

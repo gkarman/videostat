@@ -24,3 +24,10 @@ linters:
     - nolintlint
     - misspell
     - whitespace
+    - sloglint
+
+  settings:
+    sloglint:
+      # Ключи логов только в snake_case (video_id, а не videoID) — как в событиях RabbitMQ.
+      # Одинаковые имена во всех сервисах нужны, чтобы искать в Loki по полю: | json | video_id="..."
+      key-naming-case: snake

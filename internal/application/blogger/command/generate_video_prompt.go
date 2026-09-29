@@ -24,7 +24,8 @@ func NewGenerateVideoPrompt(r blogger.Repo, g application.VideoPromptGenerator, 
 }
 
 func (c *GenerateVideoPrompt) Run(ctx context.Context, req reqdto.GenerateVideoPrompt) error {
-	log := logger.FromContext(ctx).With("component", "GenerateVideoPrompt", "videoID", req.VideoID)
+	ctx = logger.WithField(ctx, logger.KeyVideoID, req.VideoID)
+	log := logger.FromContext(ctx).With("component", "GenerateVideoPrompt")
 
 	v, err := c.r.GetVideoByID(ctx, req.VideoID)
 	if err != nil {

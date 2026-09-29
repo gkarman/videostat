@@ -23,7 +23,8 @@ func NewSubmitVideoGeneration(r blogger.Repo, g application.VideoGenerator) *Sub
 }
 
 func (c *SubmitVideoGeneration) Run(ctx context.Context, req reqdto.SubmitVideoGeneration) error {
-	log := logger.FromContext(ctx).With("component", "SubmitVideoGeneration", "videoID", req.VideoID)
+	ctx = logger.WithField(ctx, logger.KeyVideoID, req.VideoID)
+	log := logger.FromContext(ctx).With("component", "SubmitVideoGeneration")
 
 	v, err := c.r.GetVideoByID(ctx, req.VideoID)
 	if err != nil {
@@ -67,6 +68,6 @@ func (c *SubmitVideoGeneration) Run(ctx context.Context, req reqdto.SubmitVideoG
 		return fmt.Errorf("update video state: %w", err)
 	}
 
-	log.Info("video generation submitted", "platform", vg.Platform, "externalID", externalID)
+	log.Info("video generation submitted", "platform", vg.Platform, "external_id", externalID)
 	return nil
 }

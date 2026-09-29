@@ -18,6 +18,6 @@ func (h *HomeHandler) Home(w http.ResponseWriter, r *http.Request) {
 
 	w.WriteHeader(http.StatusOK)
 	if _, err := w.Write([]byte("Hello World")); err != nil {
-		log.Error("write response", "err", err)
+		log.Error("write response", "error", err)
 	}
 }

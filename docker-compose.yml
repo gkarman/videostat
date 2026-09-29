@@ -120,6 +120,7 @@ services:
       - "3100:3100"   # API (Grafana ходит по внутренней сети, порт наружу — для отладки)
     volumes:
       - ./monitoring/loki/loki.yml:/etc/loki/loki.yml:ro
+      - ./monitoring/loki/rules:/etc/loki/rules/fake:ro
       - loki_data:/loki
     command: -config.file=/etc/loki/loki.yml
 

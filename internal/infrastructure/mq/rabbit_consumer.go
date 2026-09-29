@@ -69,7 +69,7 @@ func (c *RabbitConsumer) consumeOnce(ctx context.Context, handler func([]byte) e
 	}
 	defer func() {
 		if err := conn.Close(); err != nil {
-			c.log.Error("rabbit connection close", "err", err)
+			c.log.Error("rabbit connection close", "error", err)
 		}
 	}()
 
@@ -82,7 +82,7 @@ func (c *RabbitConsumer) consumeOnce(ctx context.Context, handler func([]byte) e
 	}
 	defer func() {
 		if err := ch.Close(); err != nil {
-			c.log.Error("rabbit channel close", "err", err)
+			c.log.Error("rabbit channel close", "error", err)
 		}
 	}()
 

@@ -22,13 +22,13 @@ func VideoProcessingStartedToRabbitHandler(publisher application.Publisher, log 
 		integrationEvent := mappers.MapVideoProcessingStarted(event)
 		body, err := json.Marshal(integrationEvent)
 		if err != nil {
-			log.Error("marshal failed in VideoProcessingStartedToRabbitHandler", "err", err)
+			log.Error("marshal failed in VideoProcessingStartedToRabbitHandler", "error", err)
 			return
 		}
 
 		err = publisher.Publish(ctx, events.EventVideoProcessingStartedV1, body)
 		if err != nil {
-			log.Error("failed to publish to rabbitmq", "err", err)
+			log.Error("failed to publish to rabbitmq", "error", err)
 			return
 		}
 

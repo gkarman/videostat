@@ -27,7 +27,8 @@ func NewAnalyzeVideo(r blogger.Repo, a application.VideoAnalyzer, d application.
 }
 
 func (c *AnalyzeVideo) Run(ctx context.Context, req reqdto.AnalyzeVideo) error {
-	log := logger.FromContext(ctx).With("component", "AnalyzeVideo", "videoID", req.VideoID)
+	ctx = logger.WithField(ctx, logger.KeyVideoID, req.VideoID)
+	log := logger.FromContext(ctx).With("component", "AnalyzeVideo")
 
 	v, err := c.r.GetVideoByID(ctx, req.VideoID)
 	if err != nil {
@@ -36,7 +37,7 @@ func (c *AnalyzeVideo) Run(ctx context.Context, req reqdto.AnalyzeVideo) error {
 
 	raw, err := c.a.Analyze(ctx, req.FileURL)
 	if err != nil {
-		log.Error("analyze failed", "err", err)
+		log.Error("analyze failed", "error", err)
 		ferr := v.MarkFailProcessing(blogger.ErrorStageAnalysis, err)
 		if ferr != nil {
 			return fmt.Errorf("mark fail: %w", ferr)
