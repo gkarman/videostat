@@ -3,6 +3,10 @@ global:
   scrape_interval: 15s
   evaluation_interval: 15s
 
+# Файлы с правилами алертов (путь внутри контейнера)
+rule_files:
+  - /etc/prometheus/rules/*.yml
+
 # Список целей, с которых собираем метрики.
 # Каждая цель должна отдавать метрики по HTTP в текстовом формате (обычно /metrics).
 scrape_configs:

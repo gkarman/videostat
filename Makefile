@@ -6,7 +6,7 @@ define run_with_env
 endef
 
 up:
-	docker compose up -d db rabbitmq minio prometheus grafana
+	docker compose up -d db rabbitmq minio prometheus grafana postgres-exporter
 
 down:
 	docker compose down

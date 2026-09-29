@@ -1,0 +1,145 @@
+# Правила алертов. Prometheus проверяет их каждые evaluation_interval (15s).
+#
+# Жизненный цикл алерта:
+#   inactive — условие не выполняется;
+#   pending  — условие выполняется, но меньше, чем for;
+#   firing   — условие держится дольше for → алерт «горит» (и уходит в Alertmanager, когда он будет).
+#
+# severity: critical — чинить сейчас, warning — посмотреть сегодня.
+
+groups:
+  # ---------------- Critical ----------------
+  - name: availability
+    rules:
+      - alert: ServiceDown
+        expr: up == 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "{{ $labels.job }} недоступен"
+          description: "Prometheus не может забрать метрики с {{ $labels.instance }} больше минуты."
+
+      - alert: PostgresDown
+        expr: pg_up == 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Postgres недоступен"
+          description: "postgres-exporter работает, но не может подключиться к базе."
+
+      - alert: QueueNoConsumers
+        expr: rabbitmq_detailed_queue_consumers == 0
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: "У очереди {{ $labels.queue }} нет обработчиков"
+          description: "Воркер отключился от очереди, события копятся и не обрабатываются."
+
+  - name: cron
+    rules:
+      # Минутные задачи. Метрика появляется после первого успешного запуска,
+      # поэтому задачу, которая ни разу не прошла после рестарта, этот алерт не увидит.
+      - alert: CronTaskStale
+        expr: time() - cron_job_last_success_timestamp_seconds{task=~"poll_.*|retry_.*|trigger_.*"} > 600
+        labels:
+          severity: critical
+        annotations:
+          summary: "Cron-задача {{ $labels.task }} давно не проходила успешно"
+          description: "Последний успешный запуск {{ $value | humanizeDuration }} назад (ожидается раз в минуту)."
+
+      - alert: RefreshBloggersStale
+        expr: time() - cron_job_last_success_timestamp_seconds{task="refresh_all_bloggers"} > 26 * 3600
+        labels:
+          severity: warning
+        annotations:
+          summary: "Ночное обновление блогеров не проходило больше суток"
+          description: "Последний успешный запуск {{ $value | humanizeDuration }} назад."
+
+  - name: api
+    rules:
+      # /metrics исключаем: это Prometheus, он «разбавляет» статистику.
+      # Условие на минимальный трафик — чтобы 1 ошибка из 2 запросов не давала 50% и ложную тревогу.
+      - alert: HTTP5xxHigh
+        expr: |
+          (
+            sum(rate(http_requests_total{job="api", route!="/metrics", status=~"5.."}[5m]))
+            /
+            sum(rate(http_requests_total{job="api", route!="/metrics"}[5m]))
+          ) > 0.05
+          and
+          sum(increase(http_requests_total{job="api", route!="/metrics"}[5m])) > 20
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "API отдаёт много ошибок 5xx"
+          description: "{{ $value | humanizePercentage }} запросов завершаются ошибкой 5xx."
+
+      - alert: HTTPLatencyHigh
+        expr: |
+          histogram_quantile(0.95,
+            sum by (le) (rate(http_request_duration_seconds_bucket{job="api", route!="/metrics"}[5m]))
+          ) > 1
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "API отвечает медленно"
+          description: "p95 времени ответа — {{ $value | humanizeDuration }}."
+
+  # ---------------- Warning ----------------
+  - name: processing
+    rules:
+      - alert: QueueBacklog
+        expr: rabbitmq_detailed_queue_messages_ready > 50
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Очередь {{ $labels.queue }} копится"
+          description: "{{ $value }} сообщений ждут обработки дольше 10 минут — воркеры не успевают."
+
+      - alert: WorkerMessageErrors
+        expr: sum by (job, event_type) (increase(worker_messages_total{result="error"}[15m])) > 0
+        labels:
+          severity: warning
+        annotations:
+          summary: "{{ $labels.job }}: ошибки обработки {{ $labels.event_type }}"
+          description: "За 15 минут упало {{ $value | humanize }} сообщений."
+
+      # videostat_videos_failed — Gauge (снимок из БД), поэтому delta, а не increase:
+      # increase предназначен для счётчиков и уменьшение значения принял бы за рестарт.
+      - alert: VideosFailed
+        expr: delta(videostat_videos_failed[1h]) > 0
+        labels:
+          severity: warning
+        annotations:
+          summary: "Новые упавшие видео на этапе {{ $labels.stage }}"
+          description: "За последний час +{{ $value | humanize }} видео с ошибкой на этапе {{ $labels.stage }}."
+
+  - name: dependencies
+    rules:
+      - alert: ExternalAPIErrors
+        expr: |
+          sum by (provider) (rate(external_api_requests_total{status!~"2.."}[10m]))
+          /
+          sum by (provider) (rate(external_api_requests_total[10m]))
+          > 0.2
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "{{ $labels.provider }}: много неуспешных запросов"
+          description: "{{ $value | humanizePercentage }} запросов к {{ $labels.provider }} завершаются не 2xx (ошибки, лимиты 429, оплата 402)."
+
+      - alert: PostgresConnectionsHigh
+        expr: sum(pg_stat_database_numbackends) / max(pg_settings_max_connections) > 0.8
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Postgres: заняты почти все подключения"
+          description: "Использовано {{ $value | humanizePercentage }} от max_connections."
